@@ -2,10 +2,10 @@ import java.io.*;
 
 public class Serializer {
 
-    public static void serialize(String fileName, Serializable obj){
+    public static void serialize(String path, Serializable obj){
         try {
             FileOutputStream fileOut =
-                    new FileOutputStream(fileName);
+                    new FileOutputStream(path);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(obj);
             out.close();
@@ -15,16 +15,17 @@ public class Serializer {
         }
     }
 
-    public static Object deserilize(String fileName){
+    public static Object deserilize(String path){
         Object obj = null;
         try {
-            FileInputStream fileIn = new FileInputStream(fileName);
+            FileInputStream fileIn = new FileInputStream(path);
             ObjectInputStream in = new ObjectInputStream(fileIn);
             obj =in.readObject();
             in.close();
             fileIn.close();
         } catch (IOException | ClassNotFoundException i) {
             i.printStackTrace();
+            System.out.println("cannot read "+path);
         }
         return obj;
     }
