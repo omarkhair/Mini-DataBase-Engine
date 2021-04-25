@@ -115,4 +115,14 @@ public class Page implements Serializable, Comparable {
 		File f = new File(path);
 		f.delete();
 	}
+	
+	public String toString() {
+		String result = "Page ID:  "+id+"\n";
+		try {readData();} catch (DBAppException e) {}
+		for(Tuple t: data) {
+			result += t.toString()+"\n";
+		}
+		data = null;
+		return result;
+	}
 }

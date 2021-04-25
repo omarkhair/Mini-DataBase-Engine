@@ -76,6 +76,7 @@ public class Table implements Serializable {
 			Page page = new Page(tableName, clusteringKeyType);
 			pages.add(page);
 			// Collections.sort(pages);
+			System.out.println("3333333333333");
 			page.insertRecord(t);
 		} else {
 			// search for target page
@@ -139,7 +140,7 @@ public class Table implements Serializable {
 	}
 
 	public void verifyInsertion(Hashtable<String, Object> colNameValue) throws DBAppException{
-		if(colNameValue.containsKey(clusteringKey))
+		if(!colNameValue.containsKey(clusteringKey))
 			throw new DBAppException("inserted record does not have a clustering key");
 		for(Map.Entry<String, Object> ent: colNameValue.entrySet()) {
 			Column c = getColumn(ent.getKey());
@@ -265,5 +266,20 @@ public class Table implements Serializable {
 				throw new DBAppException("unsupported data type for column "+ent.getKey());
 		}
 		return true;
+	}
+	
+	public String toString() {
+		String result = "";
+		for(Column c : columns) 
+			result += c.toString()+ "  ++  ";
+		result = result.substring(0, result.length()-4);
+		result+="\n";
+		for(Page p: pages) {
+			result += p.toString();
+			for(int i = p.getNumberOfTuples();i<pageMaxRows;i++)
+				result += "empty space \n";
+			result+="\n";
+		}
+		return result;
 	}
 }

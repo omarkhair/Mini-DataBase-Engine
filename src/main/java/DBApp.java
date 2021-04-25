@@ -141,9 +141,16 @@ public class DBApp implements DBAppInterface {
         htblColNameMax.put("name", "zzzzzzzzzzzzzzz");
         htblColNameMax.put("gpa", "4");
         dbApp.createTable( "Student", "id", htblColNameType ,htblColNameMin,htblColNameMax);
-        Table data = (Table)Serializer.deserilize("src/tables/Student/Student.ser");
-        System.out.println(data.getTableName()+" "+data.getClusteringKey());
+        Table table = (Table)Serializer.deserilize("src/tables/Student/Student.ser");
         dbApp.readConfig();
+        Hashtable record1 = new Hashtable();
+        record1.put("id",2);
+        record1.put("name","mohamed");
+        record1.put("gpa",1.3);
+        dbApp.insertIntoTable("Student", record1);
+         table = (Table)Serializer.deserilize("src/tables/Student/Student.ser");
+        System.out.println(table);
+        //dbApp.createTable("Employee", "id", colNameType, colNameMin, colNameMax);
 
     }
 }

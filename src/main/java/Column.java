@@ -61,5 +61,16 @@ public class Column implements Serializable {
     	}
     	return val;
     }
+    
+    public String toString() {
+    	String result = name+" : ";
+    	switch(dataType) {
+    	case "java.lang.Integer": result += "int"; break;
+    	case "java.lang.Double": result += "double"; break;
+    	case "java.lang.Date": result += "date"; break;
+    	default: result += "String";
+    	}
+    	return result;
+    }
 
 }

@@ -23,4 +23,12 @@ public class Tuple implements Serializable, Comparable {
     public int compareTo(Object o) {
         return this.compareTo(o);
     }
+    
+    public String toString() {
+    	String result = "";
+    	for(Object o:data)
+    		result += o+"  --  ";
+    	result = result.substring(0, result.length()-4);
+    	return result;
+    }
 }
