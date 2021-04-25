@@ -78,18 +78,26 @@ public class DBApp implements DBAppInterface {
     public void insertIntoTable(String tableName, Hashtable<String, Object> colNameValue) throws DBAppException {
         String path = "src/tables/"+tableName+"/"+tableName+".ser";
         Table table = (Table) Serializer.deserilize(path);
+        table.verifyInsertion(colNameValue);
         // verify the types of the inserted values
         table.insertRecord(colNameValue);
+        Serializer.serialize(path, table);
     }
 
     @Override
     public void updateTable(String tableName, String clusteringKeyValue, Hashtable<String, Object> columnNameValue) throws DBAppException {
-
+    	
     }
 
     @Override
     public void deleteFromTable(String tableName, Hashtable<String, Object> columnNameValue) throws DBAppException {
-
+    	String path = "src/tables/"+tableName+"/"+tableName+".ser";
+        Table table = (Table) Serializer.deserilize(path);
+        //false return means there is a condition beyond min and max of some column
+        if(!table.verifyDeletion(columnNameValue))
+        	return;
+        table.deleteRecords(columnNameValue);
+        Serializer.serialize(path, table);
     }
 
     @Override

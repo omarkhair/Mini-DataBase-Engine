@@ -15,7 +15,7 @@ public class Serializer {
         }
     }
 
-    public static Object deserilize(String path){
+    public static Object deserilize(String path) throws DBAppException{
         Object obj = null;
         try {
             FileInputStream fileIn = new FileInputStream(path);
@@ -26,6 +26,7 @@ public class Serializer {
         } catch (IOException | ClassNotFoundException i) {
             i.printStackTrace();
             System.out.println("cannot read "+path);
+            throw new DBAppException("File not found");
         }
         return obj;
     }

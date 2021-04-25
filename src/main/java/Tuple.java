@@ -14,6 +14,10 @@ public class Tuple implements Serializable, Comparable {
     public void setData(Vector<Object> data) {
         this.data = data;
     }
+    
+    public Object getIthVal(int i) {
+    	return data.get(i);
+    }
 
     @Override
     public int compareTo(Object o) {

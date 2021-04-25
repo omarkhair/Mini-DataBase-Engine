@@ -1,4 +1,7 @@
 import java.io.Serializable;
+import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 public class Column implements Serializable {
     private String name;
@@ -36,12 +39,27 @@ public class Column implements Serializable {
         isIndexed = indexed;
     }
 
-    public String getMin() {
-        return min;
+    @SuppressWarnings("rawtypes")
+	public Comparable getMin() throws ParseException {
+        return parseType(min);
     }
 
-    public String getMax() {
-        return max;
+    @SuppressWarnings("rawtypes")
+    public Comparable getMax() throws ParseException {
+        return parseType(max);
+    }
+    
+    public Comparable parseType(String val) throws ParseException {
+    	if(dataType.equals("java.lang.Integer")) {
+    		return Integer.parseInt(val);
+    	}
+    	if(dataType.equals("java.lang.Double")) {
+    		return Double.parseDouble(val);
+    	}
+    	if(dataType.equals("java.lang.Date")) {
+    		return new SimpleDateFormat("YYYY-MM-DD").parse(val);  
+    	}
+    	return val;
     }
 
 }
