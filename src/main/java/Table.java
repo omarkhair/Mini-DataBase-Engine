@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.*;
@@ -25,6 +28,7 @@ public class Table implements Serializable {
 			else
 				columns.add(col);
 		}
+		create_metadata();
 		pages = new Vector<>();
 		this.pageMaxRows = pageMaxRows;
 	}
@@ -64,19 +68,57 @@ public class Table implements Serializable {
 	public void insertRecord(Hashtable<String, Object> colNameValue) throws DBAppException {
 		Vector<Object> data = new Vector<>();
 		for (Column c : columns) {
-			data.add(colNameValue.getOrDefault(c.getName(),null));
+			data.add(colNameValue.getOrDefault(c.getName(), null));
 		}
 		Tuple t = new Tuple(data);
+//		insertRecordOverflow(t);
 		insertRecordHelper(t);
 	}
 
-	@SuppressWarnings("unchecked")
-	public void insertRecordHelper(Tuple t) throws DBAppException{
+	public void insertRecordOverflow(Tuple t) throws DBAppException {
+		if (pages.size() == 0) {
+			Page page = new Page(tableName, clusteringKeyType);
+			pages.add(page);
+			page.insertRecord(t);
+		} else {
+			int target = binarySearch(t.getData().get(0));
+			Page currentPage = pages.get(target);
+			if (currentPage.getNumberOfTuples() < pageMaxRows) {
+				currentPage.insertRecord(t);
+				return;
+			} else {
+				if (target == pages.size() - 1) {
+					Page nextPage = new Page(tableName, clusteringKeyType);
+					currentPage.insertRecord(t);
+					Tuple lastRecord = currentPage.removeLastRecord();
+					pages.add(nextPage);
+					nextPage.insertRecord(lastRecord);
+					return;
+				}
+				Page nextPage = pages.get(target + 1);
+				if (nextPage.getNumberOfTuples() < pageMaxRows) {
+					currentPage.insertRecord(t);
+					Tuple lastRecord = currentPage.removeLastRecord();
+					nextPage.insertRecord(lastRecord);
+					return;
+				}
+				// current and next pages are both full, and an overflow page is needed
+				Page overflowPage = new Page(tableName, clusteringKeyType);
+				currentPage.insertRecord(t);
+				for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
+					overflowPage.insertRecord(currentPage.removeLastRecord());
+				}
+				pages.add(overflowPage);
+
+			}
+		}
+	}
+
+	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
 			Page page = new Page(tableName, clusteringKeyType);
 			pages.add(page);
 			// Collections.sort(pages);
-			System.out.println("3333333333333");
 			page.insertRecord(t);
 		} else {
 			// search for target page
@@ -97,7 +139,6 @@ public class Table implements Serializable {
 			page.insertRecord(t);
 		}
 	}
-
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private int binarySearch(Object key) {
@@ -131,7 +172,7 @@ public class Table implements Serializable {
 		Vector<Page> toBeRemoved = new Vector<>();
 		for (Page p : pages) {
 			p.deleteRecords(colNameValue, columns);
-			if(p.getNumberOfTuples()==0) {
+			if (p.getNumberOfTuples() == 0) {
 				toBeRemoved.add(p);
 				p.deletePageFromDisk();
 			}
@@ -139,147 +180,181 @@ public class Table implements Serializable {
 		pages.removeAll(toBeRemoved);
 	}
 
-	public void verifyInsertion(Hashtable<String, Object> colNameValue) throws DBAppException{
-		if(!colNameValue.containsKey(clusteringKey))
+	public void verifyInsertion(Hashtable<String, Object> colNameValue) throws DBAppException {
+		readMetaData();
+		if (!colNameValue.containsKey(clusteringKey))
 			throw new DBAppException("inserted record does not have a clustering key");
-		for(Map.Entry<String, Object> ent: colNameValue.entrySet()) {
+		for (Map.Entry<String, Object> ent : colNameValue.entrySet()) {
 			Column c = getColumn(ent.getKey());
-			if(c==null) 
+			if (c == null)
 				throw new DBAppException("there is no column named " + ent.getKey());
 			Object val = ent.getValue();
-			if(val instanceof String) {
-				if(!c.getDataType().equals("java.lang.String"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			if (val instanceof String) {
+				if (!c.getDataType().equals("java.lang.String"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
 				try {
-					if(val2.compareTo(((String)c.getMax()))>0 || val2.compareTo(((String)c.getMin()))<0) {
-						throw new DBAppException("out of bounds value for column "+ent.getKey());
+					if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
+						throw new DBAppException("out of bounds value for column " + ent.getKey());
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Integer) {
-				if(!c.getDataType().equals("java.lang.Integer"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Integer) {
+				if (!c.getDataType().equals("java.lang.Integer"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Integer val2 = (Integer) val;
 				try {
-					if(val2.compareTo(((Integer)c.getMax()))>0 || val2.compareTo(((Integer)c.getMin()))<0) {
-						throw new DBAppException("out of bounds value for column "+ent.getKey());
+					if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
+						throw new DBAppException("out of bounds value for column " + ent.getKey());
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Double) {
-				if(!c.getDataType().equals("java.lang.Double"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Double) {
+				if (!c.getDataType().equals("java.lang.Double"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Double val2 = (Double) val;
 				try {
-					if(val2.compareTo(((Double)c.getMax()))>0 || val2.compareTo(((Double)c.getMin()))<0) {
-						throw new DBAppException("out of bounds value for column "+ent.getKey());
+					if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
+						throw new DBAppException("out of bounds value for column " + ent.getKey());
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Date) {
-				if(!c.getDataType().equals("java.lang.Date"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Date) {
+				if (!c.getDataType().equals("java.lang.Date"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
 				try {
-					if(val2.compareTo(((Date)c.getMax()))>0 || val2.compareTo(((Date)c.getMin()))<0) {
-						throw new DBAppException("out of bounds value for column "+ent.getKey());
+					if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
+						throw new DBAppException("out of bounds value for column " + ent.getKey());
 					}
 				} catch (ParseException e) {
 					throw new DBAppException("invalid date format");
 				}
-			}
-			else 
-				throw new DBAppException("unsupported data type for column "+ent.getKey());
+			} else
+				throw new DBAppException("unsupported data type for column " + ent.getKey());
 		}
 	}
-	
+
 	public Column getColumn(String columnName) {
-		for(Column c: columns) {
-			if(c.getName().equals(columnName))
+		for (Column c : columns) {
+			if (c.getName().equals(columnName))
 				return c;
 		}
 		return null;
 	}
 
-	public boolean verifyDeletion(Hashtable<String, Object> colNameValue) throws DBAppException{
-		for(Map.Entry<String, Object> ent: colNameValue.entrySet()) {
+	public boolean verifyDeletion(Hashtable<String, Object> colNameValue) throws DBAppException {
+		readMetaData();
+		for (Map.Entry<String, Object> ent : colNameValue.entrySet()) {
 			Column c = getColumn(ent.getKey());
-			if(c==null) 
+			if (c == null)
 				throw new DBAppException("there is no column named " + ent.getKey());
 			Object val = ent.getValue();
-			if(val instanceof String) {
-				if(!c.getDataType().equals("java.lang.String"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			if (val instanceof String) {
+				if (!c.getDataType().equals("java.lang.String"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
 				try {
-					if(val2.compareTo(((String)c.getMax()))>0 || val2.compareTo(((String)c.getMin()))<0) {
+					if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
 						return false;
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Integer) {
-				if(!c.getDataType().equals("java.lang.Integer"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Integer) {
+				if (!c.getDataType().equals("java.lang.Integer"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Integer val2 = (Integer) val;
 				try {
-					if(val2.compareTo(((Integer)c.getMax()))>0 || val2.compareTo(((Integer)c.getMin()))<0) {
+					if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
 						return false;
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Double) {
-				if(!c.getDataType().equals("java.lang.Double"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Double) {
+				if (!c.getDataType().equals("java.lang.Double"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Double val2 = (Double) val;
 				try {
-					if(val2.compareTo(((Double)c.getMax()))>0 || val2.compareTo(((Double)c.getMin()))<0) {
+					if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
 						return false;
 					}
 				} catch (ParseException e) {
 					throw new DBAppException();
 				}
-			}
-			else if(val instanceof Date) {
-				if(!c.getDataType().equals("java.lang.Date"))
-					throw new DBAppException("mismatching data type of column "+ent.getKey());
+			} else if (val instanceof Date) {
+				if (!c.getDataType().equals("java.lang.Date"))
+					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
 				try {
-					if(val2.compareTo(((Date)c.getMax()))>0 || val2.compareTo(((Date)c.getMin()))<0) {
+					if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
 						return false;
 					}
 				} catch (ParseException e) {
 					throw new DBAppException("invalid date format");
 				}
-			}
-			else 
-				throw new DBAppException("unsupported data type for column "+ent.getKey());
+			} else
+				throw new DBAppException("unsupported data type for column " + ent.getKey());
 		}
 		return true;
 	}
-	
+
 	public String toString() {
 		String result = "";
-		for(Column c : columns) 
-			result += c.toString()+ "  ++  ";
-		result = result.substring(0, result.length()-4);
-		result+="\n";
-		for(Page p: pages) {
+		for (Column c : columns)
+			result += c.toString() + "  ++  ";
+		result = result.substring(0, result.length() - 4);
+		result += "\n";
+		for (Page p : pages) {
 			result += p.toString();
-			for(int i = p.getNumberOfTuples();i<pageMaxRows;i++)
+			for (int i = p.getNumberOfTuples(); i < pageMaxRows; i++)
 				result += "empty space \n";
-			result+="\n";
+			result += "\n";
 		}
 		return result;
+	}
+
+	public void readMetaData() throws DBAppException {
+		Scanner sc;
+		try {
+			sc = new Scanner(new File("src/main/resources/metadata_" + tableName + ".csv"));
+		} catch (Exception e) {
+			throw new DBAppException("meta data file not found for table " + tableName);
+		}
+		sc.nextLine();
+		for (Column c : columns) {
+			if (!sc.hasNextLine())
+				throw new DBAppException("invalid meta data file for table " + tableName);
+			String[] line = sc.nextLine().split(",");
+			//System.out.println(Arrays.toString(line));
+			if (line.length != 7 || !line[0].equals(tableName) || !line[1].equals(c.getName())
+					|| !line[2].equals(c.getDataType()) || !line[5].equals(c.getMinString())
+					|| !line[6].equals(c.getMaxString())
+					|| (c.getName().equals(clusteringKey) != line[3].equals("True")))
+				throw new DBAppException("invalid meta data file for table " + tableName);
+		}
+		if (sc.hasNextLine())
+			throw new DBAppException("invalid meta data file for table " + tableName);
+	}
+
+	private void create_metadata() {
+		try {
+			PrintWriter pw = new PrintWriter("src/main/resources/metadata_" + tableName + ".csv");
+			pw.println("Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max");
+			for (Column c : columns) {
+				pw.println(tableName + "," + c.getName() + "," + c.getDataType() + ","
+						+ (c.getName().equals(clusteringKey) ? "True" : "False") + ",False," + c.getMinString() + ","
+						+ c.getMaxString());
+			}
+			pw.flush();
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
 	}
 }

@@ -51,6 +51,8 @@ public class Page implements Serializable, Comparable {
     public void insertRecord(Tuple t) throws DBAppException{
     	//check if it is the first entry
         readData();
+        if(data.contains(t))
+        	throw new DBAppException("Primary key already exists in table");
         numberOfTuples++;
         data.add(t);
         Collections.sort(data);
@@ -70,6 +72,8 @@ public class Page implements Serializable, Comparable {
     }
 
     public void updateMinMax() {
+    	if(numberOfTuples == 0)
+    		return;
         minValue = data.get(0).getData().get(0);
         maxValue = data.get(data.size()-1).getData().get(0);
 
@@ -97,7 +101,7 @@ public class Page implements Serializable, Comparable {
     	Vector<Tuple> toBeRemoved = new Vector<>();
     	loop: for(Tuple t: data) {
     		for(Map.Entry<String, Object> val: colNameValue.entrySet()) {
-    			int i = columns.indexOf(val.getKey());
+    			int i = getIndexOf(val.getKey(),columns);
     			if(!val.getValue().equals(t.getIthVal(i))) {
     				continue loop;
     			}
@@ -110,6 +114,15 @@ public class Page implements Serializable, Comparable {
     	writeData();
     	data = null;
     }
+
+	private int getIndexOf(String key, Vector<Column> columns) {
+		for(int i = 0; i<columns.size();i++) {
+			Column c = columns.get(i);
+			if(c.getName().equals(key))
+				return i;
+		}
+		return -1;
+	}
 
 	public void deletePageFromDisk() {
 		File f = new File(path);
@@ -125,4 +138,6 @@ public class Page implements Serializable, Comparable {
 		data = null;
 		return result;
 	}
+
+	
 }

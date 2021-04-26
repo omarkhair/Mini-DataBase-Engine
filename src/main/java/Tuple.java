@@ -21,7 +21,11 @@ public class Tuple implements Serializable, Comparable {
 
     @Override
     public int compareTo(Object o) {
-        return this.compareTo(o);
+        return ((Comparable)data.get(0)).compareTo(((Tuple)o).data.get(0));
+    }
+    @Override
+    public boolean equals(Object o) {
+    	return this.compareTo(o) == 0;
     }
     
     public String toString() {

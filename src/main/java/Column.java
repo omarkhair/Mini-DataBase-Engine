@@ -43,10 +43,18 @@ public class Column implements Serializable {
 	public Comparable getMin() throws ParseException {
         return parseType(min);
     }
+    
+    public String getMinString() {
+    	return min;
+    }
 
     @SuppressWarnings("rawtypes")
     public Comparable getMax() throws ParseException {
         return parseType(max);
+    }
+    
+    public String getMaxString() {
+    	return max;
     }
     
     public Comparable parseType(String val) throws ParseException {
