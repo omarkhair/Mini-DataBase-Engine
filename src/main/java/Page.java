@@ -129,6 +129,22 @@ public class Page implements Serializable, Comparable {
 		f.delete();
 	}
 	
+	public void updateRecord(String clusteringKey , Hashtable<String,Object> columnNameValue,Vector<Column> columns) throws DBAppException {
+        readData();
+        loop: for(Tuple t : data){
+            if((t.getData().get(0)).toString().equals(clusteringKey)){
+                for(Map.Entry<String,Object> entry : columnNameValue.entrySet()){
+                    int indx = getIndexOf(entry.getKey(), columns); 
+                    System.out.println(indx);
+                    t.getData().set(indx,entry.getValue());
+                }
+                break loop ;
+            }
+        }
+        writeData();
+        data= null ;
+    }
+	
 	public String toString() {
 		String result = "Page ID:  "+id+"\n";
 		try {readData();} catch (DBAppException e) {return e.getMessage()+"\n";}
