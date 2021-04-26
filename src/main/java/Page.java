@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Vector;
 
 public class Page implements Serializable, Comparable {
-    static int pageCounter = 0;
+    //static int pageCounter = 0;
 
     private int id;
     private String path; // src/pages/page1.ser
@@ -17,11 +17,11 @@ public class Page implements Serializable, Comparable {
     private String tableName;
     private int numberOfTuples;
     transient private Vector<Tuple> data;
-    public Page(String tableName, String keyType){
+    public Page(String tableName, String keyType,  int id){
         this.tableName = tableName;
         this.keyType = keyType;
-        id = pageCounter++;
-        path = "src/tables/"+ tableName +"/page"+id+".ser";
+        this.id = id;
+        path = "src/tables/"+ tableName +"/pages/page"+id+".ser";
         data = new Vector<Tuple>();
         writeData();
         numberOfTuples = 0;
@@ -131,7 +131,7 @@ public class Page implements Serializable, Comparable {
 	
 	public String toString() {
 		String result = "Page ID:  "+id+"\n";
-		try {readData();} catch (DBAppException e) {}
+		try {readData();} catch (DBAppException e) {return e.getMessage()+"\n";}
 		for(Tuple t: data) {
 			result += t.toString()+"\n";
 		}

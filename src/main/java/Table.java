@@ -12,6 +12,7 @@ public class Table implements Serializable {
 	private Vector<Column> columns;
 	private Vector<Page> pages;
 	private int pageMaxRows;
+	private int lastPageId;
 
 	public Table(String tableName, String clusteringKey, Hashtable<String, String> colNameType,
 			Hashtable<String, String> colNameMin, Hashtable<String, String> colNameMax, int pageMaxRows) {
@@ -31,6 +32,7 @@ public class Table implements Serializable {
 		create_metadata();
 		pages = new Vector<>();
 		this.pageMaxRows = pageMaxRows;
+		lastPageId = 0;
 	}
 
 	public String getTableName() {
@@ -71,13 +73,15 @@ public class Table implements Serializable {
 			data.add(colNameValue.getOrDefault(c.getName(), null));
 		}
 		Tuple t = new Tuple(data);
-//		insertRecordOverflow(t);
-		insertRecordHelper(t);
+		insertRecordOverflow(t);
+
+//the commented method shifts all full pages to insert instead of creating extra pages
+//		insertRecordHelper(t);
 	}
 
 	public void insertRecordOverflow(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
-			Page page = new Page(tableName, clusteringKeyType);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
 			pages.add(page);
 			page.insertRecord(t);
 		} else {
@@ -88,7 +92,7 @@ public class Table implements Serializable {
 				return;
 			} else {
 				if (target == pages.size() - 1) {
-					Page nextPage = new Page(tableName, clusteringKeyType);
+					Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++);
 					currentPage.insertRecord(t);
 					Tuple lastRecord = currentPage.removeLastRecord();
 					pages.add(nextPage);
@@ -103,12 +107,12 @@ public class Table implements Serializable {
 					return;
 				}
 				// current and next pages are both full, and an overflow page is needed
-				Page overflowPage = new Page(tableName, clusteringKeyType);
+				Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++);
 				currentPage.insertRecord(t);
 				for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
 					overflowPage.insertRecord(currentPage.removeLastRecord());
 				}
-				pages.add(overflowPage);
+				pages.add(target + 1, overflowPage);
 
 			}
 		}
@@ -116,7 +120,7 @@ public class Table implements Serializable {
 
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
-			Page page = new Page(tableName, clusteringKeyType);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
 			pages.add(page);
 			// Collections.sort(pages);
 			page.insertRecord(t);
@@ -133,7 +137,7 @@ public class Table implements Serializable {
 					t = currentPage.removeLastRecord();
 				}
 			}
-			Page page = new Page(tableName, clusteringKeyType);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
 			pages.add(page);
 			// Collections.sort(pages);
 			page.insertRecord(t);
@@ -150,7 +154,7 @@ public class Table implements Serializable {
 			if ((((Comparable) key).compareTo(p.getMaxValue()) <= 0
 					&& ((Comparable) key).compareTo(p.getMinValue()) >= 0)
 					|| ((((Comparable) key).compareTo(p.getMaxValue()) >= 0) && mid + 1 < pages.size()
-							&& ((Comparable) key).compareTo(pages.get(mid + 1).getMinValue()) <= 0)
+							&& ((Comparable) key).compareTo(pages.get(mid + 1).getMinValue()) < 0)
 					|| ((((Comparable) key).compareTo(p.getMaxValue()) >= 0) && mid + 1 == pages.size())
 					|| ((((Comparable) key).compareTo(p.getMinValue()) <= 0) && mid == 0)) {
 				return mid;
@@ -169,15 +173,29 @@ public class Table implements Serializable {
 	}
 
 	public void deleteRecords(Hashtable<String, Object> colNameValue) throws DBAppException {
-		Vector<Page> toBeRemoved = new Vector<>();
-		for (Page p : pages) {
+		if (!colNameValue.containsKey(clusteringKey)) {
+			Vector<Page> toBeRemoved = new Vector<>();
+			for (Page p : pages) {
+				p.deleteRecords(colNameValue, columns);
+				if (p.getNumberOfTuples() == 0) {
+					toBeRemoved.add(p);
+					p.deletePageFromDisk();
+				}
+			}
+			pages.removeAll(toBeRemoved);
+		}
+		else {
+			Object primaryKeyVal = colNameValue.get(clusteringKey);
+			int target = binarySearch(primaryKeyVal);
+//			System.out.println(target);
+			Page p = pages.get(target);
 			p.deleteRecords(colNameValue, columns);
 			if (p.getNumberOfTuples() == 0) {
-				toBeRemoved.add(p);
+				pages.remove(p);
 				p.deletePageFromDisk();
 			}
+			
 		}
-		pages.removeAll(toBeRemoved);
 	}
 
 	public void verifyInsertion(Hashtable<String, Object> colNameValue) throws DBAppException {
@@ -330,7 +348,7 @@ public class Table implements Serializable {
 			if (!sc.hasNextLine())
 				throw new DBAppException("invalid meta data file for table " + tableName);
 			String[] line = sc.nextLine().split(",");
-			//System.out.println(Arrays.toString(line));
+			// System.out.println(Arrays.toString(line));
 			if (line.length != 7 || !line[0].equals(tableName) || !line[1].equals(c.getName())
 					|| !line[2].equals(c.getDataType()) || !line[5].equals(c.getMinString())
 					|| !line[6].equals(c.getMaxString())

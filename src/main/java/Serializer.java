@@ -24,9 +24,9 @@ public class Serializer {
             in.close();
             fileIn.close();
         } catch (IOException | ClassNotFoundException i) {
-            i.printStackTrace();
-            System.out.println("cannot read "+path);
-            throw new DBAppException("File not found");
+            //i.printStackTrace();
+            //System.out.println("cannot read "+path);
+            throw new DBAppException(path+" not found");
         }
         return obj;
     }

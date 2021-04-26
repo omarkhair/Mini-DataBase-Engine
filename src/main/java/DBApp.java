@@ -111,41 +111,56 @@ public class DBApp implements DBAppInterface {
 
 	}
 
-	public static void main(String[] args) throws DBAppException {
+	public static void main(String[] args) throws DBAppException, InterruptedException {
 	DBApp dbApp = new DBApp();
-        Hashtable htblColNameType = new Hashtable( );
-        htblColNameType.put("id", "java.lang.Integer");
-        htblColNameType.put("name", "java.lang.String");
-        htblColNameType.put("gpa", "java.lang.Double");
-        Hashtable htblColNameMin = new Hashtable( );
-        htblColNameMin.put("id", "0");
-        htblColNameMin.put("name", "a");
-        htblColNameMin.put("gpa", "1");
-        Hashtable htblColNameMax = new Hashtable( );
-        htblColNameMax.put("id", "1000");
-        htblColNameMax.put("name", "zzzzzzzzzzzzzzz");
-        htblColNameMax.put("gpa", "4");
-        dbApp.createTable( "Student", "id", htblColNameType ,htblColNameMin,htblColNameMax);
-		Table table = (Table) Serializer.deserilize("src/tables/Student/Student.ser");
-		for (int i = 0; i < 20; i+=2) {
-			Hashtable record1 = new Hashtable();
-			record1.put("id", i);
-			record1.put("name", "hesham");
-			record1.put("gpa", 2.0);
-			dbApp.insertIntoTable("Student", record1);
-		}
-		for(int i = 25 ; i<40;i+=1) {
-		Hashtable record1 = new Hashtable();
-		record1.put("id",i);
-		record1.put("name", "hesham");
-		record1.put("gpa", 2.0);
-		dbApp.insertIntoTable("Student", record1);}
-//		for(int i=6;i<12;i++) {
-//			Hashtable<String, Object> ht = new Hashtable<>();
-//			ht.put("name", "hesham");
-//			dbApp.deleteFromTable("Student", ht);
+//        Hashtable htblColNameType = new Hashtable( );
+//        htblColNameType.put("id", "java.lang.Integer");
+//        htblColNameType.put("name", "java.lang.String");
+//        htblColNameType.put("gpa", "java.lang.Double");
+//        Hashtable htblColNameMin = new Hashtable( );
+//        htblColNameMin.put("id", "0");
+//        htblColNameMin.put("name", "a");
+//        htblColNameMin.put("gpa", "1");
+//        Hashtable htblColNameMax = new Hashtable( );
+//        htblColNameMax.put("id", "1000");
+//        htblColNameMax.put("name", "zzzzzzzzzzzzzzz");
+//        htblColNameMax.put("gpa", "4");
+//        dbApp.createTable( "Student", "id", htblColNameType ,htblColNameMin,htblColNameMax);
+//		for (int i = 0; i < 30; i+=3) {
+//			Hashtable record1 = new Hashtable();
+//			record1.put("id", i);
+//			record1.put("name", "ahmed");
+//			record1.put("gpa", 3.0);
+//			dbApp.insertIntoTable("Student", record1);
 //		}
-		table = (Table) Serializer.deserilize("src/tables/Student/Student.ser");
+//		for (int i = 1; i < 30; i+=3) {
+//			Hashtable record1 = new Hashtable();
+//			record1.put("id", i);
+//			record1.put("name", "ahmed");
+//			record1.put("gpa", 2.0);
+//			dbApp.insertIntoTable("Student", record1);
+//		}
+//		for (int i = 2; i < 30; i+=3) {
+//			Hashtable record1 = new Hashtable();
+//			record1.put("id", i);
+//			record1.put("name", "omar");
+//			record1.put("gpa", 2.0);
+//			dbApp.insertIntoTable("Student", record1);
+//		}
+//		Hashtable record1 = new Hashtable();
+//		record1.put("id",29);
+//		record1.put("name", "hesham");
+//		record1.put("gpa", 2.0);
+//		dbApp.insertIntoTable("Student", record1);
+//		for(int i=6;i<12;i++) {
+			Hashtable<String, Object> ht = new Hashtable<>();
+//			ht.put("id", 1);
+//			ht.put("id", 22);
+			ht.put("gpa", 2.0);
+			dbApp.deleteFromTable("Student", ht);
+//		}
+
+		Table table = (Table) Serializer.deserilize("src/tables/Student/Student.ser");
 		System.out.println(table);
 		
 		// dbApp.createTable("Employee", "id", colNameType, colNameMin, colNameMax);
