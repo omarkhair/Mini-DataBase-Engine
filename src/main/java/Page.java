@@ -16,6 +16,7 @@ public class Page implements Serializable, Comparable {
     private Object maxValue;
     private String tableName;
     private int numberOfTuples;
+    private Tuple updatedCustering ; 
     transient private Vector<Tuple> data;
     public Page(String tableName, String keyType,  int id){
         this.tableName = tableName;
@@ -25,6 +26,7 @@ public class Page implements Serializable, Comparable {
         data = new Vector<Tuple>();
         writeData();
         numberOfTuples = 0;
+        updatedCustering = null ; 
     }
 
     public void writeData(){
@@ -129,22 +131,35 @@ public class Page implements Serializable, Comparable {
 		f.delete();
 	}
 	
-	public void updateRecord(String clusteringKey , Hashtable<String,Object> columnNameValue,Vector<Column> columns) throws DBAppException {
+	public boolean updateRecord(String clusteringKey , Hashtable<String,Object> columnNameValue,Vector<Column> columns) throws DBAppException {
         readData();
+    	boolean flag = false ; 
         loop: for(Tuple t : data){
             if((t.getData().get(0)).toString().equals(clusteringKey)){
                 for(Map.Entry<String,Object> entry : columnNameValue.entrySet()){
                     int indx = getIndexOf(entry.getKey(), columns); 
-                    System.out.println(indx);
+                    if(indx==0) {
+                    	flag = true ; 
+                    }
+                  //  System.out.println(indx);
                     t.getData().set(indx,entry.getValue());
+                }
+                if(flag) {
+                	this.updatedCustering  = t ; 
+                	data.remove(t); 
                 }
                 break loop ;
             }
         }
         writeData();
         data= null ;
+        return flag ; 
     }
 	
+	public Tuple getupdatedClustering() {
+		return this.updatedCustering ; 
+	}
+
 	public String toString() {
 		String result = "Page ID:  "+id+"\n";
 		try {readData();} catch (DBAppException e) {return e.getMessage()+"\n";}

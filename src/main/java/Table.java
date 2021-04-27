@@ -172,7 +172,12 @@ public class Table implements Serializable {
 		Comparable newClusteringKey = Utilities.parseType(clusteringKey,clusteringKeyType);
 		int target = binarySearch(newClusteringKey);
 		Page p = pages.get(target);
-		p.updateRecord(clusteringKey,columnNameValue,columns);
+		if(p.updateRecord(clusteringKey,columnNameValue,columns)) {
+			Tuple t = p.getupdatedClustering(); 
+			int newTarget = binarySearch(t.getIthVal(0)); 
+			Page p2 = pages.get(newTarget); 
+			p2.insertRecord(t);
+		}
 	}
 
 

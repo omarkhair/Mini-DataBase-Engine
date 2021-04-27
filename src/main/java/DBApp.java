@@ -157,8 +157,10 @@ public class DBApp implements DBAppInterface {
 //		dbApp.insertIntoTable("Student", record1);
 //		for(int i=6;i<12;i++) {
 		 Hashtable<String, Object> ht = new Hashtable<>();
-			ht.put("name", 2);
+			ht.put("id", 30);
+			ht.put("gpa", 2.5); 
 			 dbApp.updateTable("Student", "18",ht);
+			 
 ////		}
 
 		Table table = (Table) Serializer.deserilize("src/tables/Student/Student.ser");
