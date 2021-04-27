@@ -146,7 +146,9 @@ public class Page implements Serializable, Comparable {
                 }
                 if(flag) {
                 	this.updatedCustering  = t ; 
-                	data.remove(t); 
+                	data.remove(t);
+                	numberOfTuples--; 
+                	updateMinMax();
                 }
                 break loop ;
             }
@@ -156,7 +158,7 @@ public class Page implements Serializable, Comparable {
         return flag ; 
     }
 	
-	public Tuple getupdatedClustering() {
+	public Tuple getUpdatedClustering() {
 		return this.updatedCustering ; 
 	}
 

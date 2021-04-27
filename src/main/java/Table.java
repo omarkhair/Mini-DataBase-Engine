@@ -173,10 +173,8 @@ public class Table implements Serializable {
 		int target = binarySearch(newClusteringKey);
 		Page p = pages.get(target);
 		if(p.updateRecord(clusteringKey,columnNameValue,columns)) {
-			Tuple t = p.getupdatedClustering(); 
-			int newTarget = binarySearch(t.getIthVal(0)); 
-			Page p2 = pages.get(newTarget); 
-			p2.insertRecord(t);
+			Tuple t = p.getUpdatedClustering(); 
+			insertRecordOverflow(t);
 		}
 	}
 
