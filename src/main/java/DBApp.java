@@ -160,7 +160,7 @@ public class DBApp implements DBAppInterface {
 			ht.put("id", 9);
 			ht.put("gpa", 2.6);
 			ht.put("name","mohamed"); 
-			dbApp.updateTable("Student", "6",ht);
+			// dbApp.updateTable("Student", "6",ht);
 //			 
 ////		}
 
