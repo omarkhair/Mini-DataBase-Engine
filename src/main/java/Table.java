@@ -173,6 +173,9 @@ public class Table implements Serializable {
 		int target = binarySearch(newClusteringKey);
 		Page p = pages.get(target);
 		if(p.updateRecord(clusteringKey,columnNameValue,columns)) {
+			if(p.getNumberOfTuples()==0){
+				pages.remove(p);
+			}
 			Tuple t = p.getUpdatedClustering(); 
 			insertRecordOverflow(t);
 		}
@@ -456,5 +459,10 @@ public class Table implements Serializable {
 			e.printStackTrace();
 		}
 
+	}
+	public void updatePagesRecord() {
+		for(Page p : pages) {
+			p.setId(pages.indexOf(p)); 
+		}
 	}
 }

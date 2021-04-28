@@ -63,6 +63,7 @@ public class DBApp implements DBAppInterface {
 		table.verifyInsertion(colNameValue);
 		// verify the types of the inserted values
 		table.insertRecord(colNameValue);
+		table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
@@ -72,6 +73,7 @@ public class DBApp implements DBAppInterface {
         Table table = (Table) Serializer.deserilize(path);
         table.verifyUpdate(clusteringKeyValue,columnNameValue);
         table.updateRecord(clusteringKeyValue,columnNameValue);
+        table.updatePagesRecord();
         Serializer.serialize(path, table);
     }
 
@@ -83,6 +85,7 @@ public class DBApp implements DBAppInterface {
 		if (!table.verifyDeletion(columnNameValue))
 			return;
 		table.deleteRecords(columnNameValue);
+		table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
@@ -157,10 +160,10 @@ public class DBApp implements DBAppInterface {
 //		dbApp.insertIntoTable("Student", record1);
 //		for(int i=6;i<12;i++) {
 		 Hashtable<String, Object> ht = new Hashtable<>();
-			ht.put("id", 9);
+			ht.put("id", 37);
 			ht.put("gpa", 2.6);
 			ht.put("name","mohamed"); 
-			dbApp.updateTable("Student", "6",ht);
+			dbApp.updateTable("Student", "9",ht);
 //			 
 ////		}
 

@@ -149,6 +149,9 @@ public class Page implements Serializable, Comparable {
                 	data.remove(t);
                 	numberOfTuples--; 
                 	updateMinMax();
+                	if(numberOfTuples==0){
+                	    deletePageFromDisk();
+                    }
                 }
                 break loop ;
             }
@@ -170,6 +173,12 @@ public class Page implements Serializable, Comparable {
 		}
 		data = null;
 		return result;
+	}
+	public int getId() {
+		return id; 
+	}
+	public void setId(int id ) {
+		this.id = id ; 
 	}
 
 	
