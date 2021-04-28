@@ -1,4 +1,0 @@
-Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max
-Student,id,java.lang.Integer,True,False,0,1000
-Student,gpa,java.lang.Double,False,False,1,4
-Student,name,java.lang.String,False,False,a,zzzzzzzzzzzzzzz
