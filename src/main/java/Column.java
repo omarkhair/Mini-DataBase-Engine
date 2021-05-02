@@ -64,8 +64,8 @@ public class Column implements Serializable {
     	if(dataType.equals("java.lang.Double")) {
     		return Double.parseDouble(val);
     	}
-    	if(dataType.equals("java.lang.Date")) {
-    		return new SimpleDateFormat("YYYY-MM-DD").parse(val);  
+    	if(dataType.equals("java.util.Date")) {
+    		return new SimpleDateFormat("yyyy-MM-dd").parse(val);  
     	}
     	return val;
     }
@@ -75,7 +75,7 @@ public class Column implements Serializable {
     	switch(dataType) {
     	case "java.lang.Integer": result += "int"; break;
     	case "java.lang.Double": result += "double"; break;
-    	case "java.lang.Date": result += "date"; break;
+    	case "java.util.Date": result += "date"; break;
     	default: result += "String";
     	}
     	return result;

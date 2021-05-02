@@ -11,7 +11,7 @@ public class Utilities {
             if (dataType.equals("java.lang.Double")) {
                 return Double.parseDouble(val);
             }
-            if (dataType.equals("java.lang.Date")) {
+            if (dataType.equals("java.util.Date")) {
                 return new SimpleDateFormat("YYYY-MM-DD").parse(val);
             }
             return val;

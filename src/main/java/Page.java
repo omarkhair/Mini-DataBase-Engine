@@ -22,7 +22,7 @@ public class Page implements Serializable, Comparable {
         this.tableName = tableName;
         this.keyType = keyType;
         this.id = id;
-        path = "src/tables/"+ tableName +"/pages/page"+id+".ser";
+        path = "src/main/resources/data/"+ tableName +"/pages/page"+id+".ser";
         data = new Vector<Tuple>();
         writeData();
         numberOfTuples = 0;
@@ -166,7 +166,7 @@ public class Page implements Serializable, Comparable {
 	}
 
 	public String toString() {
-		String result = "Page ID:  "+id+"\n";
+		String result = ""; //"Page ID:  "+id+"\n";
 		try {readData();} catch (DBAppException e) {return e.getMessage()+"\n";}
 		for(Tuple t: data) {
 			result += t.toString()+"\n";

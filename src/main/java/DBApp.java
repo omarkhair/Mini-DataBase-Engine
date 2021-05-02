@@ -25,7 +25,7 @@ public class DBApp implements DBAppInterface {
 		// create metadata file
 		readConfig();
 		Table table = new Table(tableName, clusteringKey, colNameType, colNameMin, colNameMax, MaximumRowsCountinPage);
-		String path = "src/tables/" + tableName;
+		String path = "src/main/resources/data/" + tableName;
 		File file = new File(path);
 		file.mkdir();
 		file = new File(path + "/pages");
@@ -40,7 +40,7 @@ public class DBApp implements DBAppInterface {
 			if (ent.getKey().equals(clusteringKey))
 				flag = true;
 			if (!(ent.getValue().equals("java.lang.Integer") || ent.getValue().equals("java.lang.String")
-					|| ent.getValue().equals("java.lang.Double") || ent.getValue().equals("java.lang.Date")))
+					|| ent.getValue().equals("java.lang.Double") || ent.getValue().equals("java.util.Date")))
 				throw new DBAppException();
 			if (!colNameMin.containsKey(ent.getKey()) || !colNameMax.containsKey(ent.getKey())) {
 				throw new DBAppException();
@@ -58,34 +58,34 @@ public class DBApp implements DBAppInterface {
 
 	@Override
 	public void insertIntoTable(String tableName, Hashtable<String, Object> colNameValue) throws DBAppException {
-		String path = "src/tables/" + tableName + "/" + tableName + ".ser";
+		String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
 		Table table = (Table) Serializer.deserilize(path);
 		table.verifyInsertion(colNameValue);
 		// verify the types of the inserted values
 		table.insertRecord(colNameValue);
-		table.updatePagesRecord();
+		//table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
 	@Override
 	public void updateTable(String tableName, String clusteringKeyValue, Hashtable<String, Object> columnNameValue) throws DBAppException {
-    	String path = "src/tables/"+tableName+"/"+tableName+".ser";
+    	String path = "src/main/resources/data/"+tableName+"/"+tableName+".ser";
         Table table = (Table) Serializer.deserilize(path);
         table.verifyUpdate(clusteringKeyValue,columnNameValue);
         table.updateRecord(clusteringKeyValue,columnNameValue);
-        table.updatePagesRecord();
+        //table.updatePagesRecord();
         Serializer.serialize(path, table);
     }
 
 	@Override
 	public void deleteFromTable(String tableName, Hashtable<String, Object> columnNameValue) throws DBAppException {
-		String path = "src/tables/" + tableName + "/" + tableName + ".ser";
+		String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
 		Table table = (Table) Serializer.deserilize(path);
 		// false return means there is a condition beyond min and max of some column
 		if (!table.verifyDeletion(columnNameValue))
 			return;
 		table.deleteRecords(columnNameValue);
-		table.updatePagesRecord();
+		//table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
@@ -167,7 +167,7 @@ public class DBApp implements DBAppInterface {
 //			 
 ////		}
 
-		Table table = (Table) Serializer.deserilize("src/tables/Student/Student.ser");
+		Table table = (Table) Serializer.deserilize("src/main/resources/data/Student/Student.ser");
 		System.out.println(table);
 		
 		// dbApp.createTable("Employee", "id", colNameType, colNameMin, colNameMax);
