@@ -26,7 +26,8 @@ public class Page implements Serializable, Comparable {
         data = new Vector<Tuple>();
         writeData();
         numberOfTuples = 0;
-        updatedCustering = null ; 
+        updatedCustering = null;
+        data = null;
     }
 
     public void writeData(){
@@ -74,7 +75,7 @@ public class Page implements Serializable, Comparable {
     }
 
     public void updateMinMax() {
-    	if(numberOfTuples == 0)
+    	if(numberOfTuples == 0 || data == null)
     		return;
         minValue = data.get(0).getData().get(0);
         maxValue = data.get(data.size()-1).getData().get(0);
