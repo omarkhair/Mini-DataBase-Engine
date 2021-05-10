@@ -6,12 +6,10 @@ public class BucketEntry implements Serializable {
 
 	private Vector<Object> data;
 	private int pageId;
-	private int entryIndex;
-	
+
 	public BucketEntry(Vector<Object> data, int pageId, int entryIndex) {
 		this.setData(data);
 		this.setPageId(pageId);
-		this.setEntryIndex(entryIndex);
 	}
 
 	public Vector<Object> getData() {
@@ -30,12 +28,8 @@ public class BucketEntry implements Serializable {
 		this.pageId = pageId;
 	}
 
-	public int getEntryIndex() {
-		return entryIndex;
-	}
-
-	public void setEntryIndex(int entryIndex) {
-		this.entryIndex = entryIndex;
+	public String toString(){
+		return data.toString() + " in page with ID " + pageId;
 	}
 	
 }
