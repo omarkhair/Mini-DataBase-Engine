@@ -13,6 +13,8 @@ public class Table implements Serializable {
 	private Vector<Page> pages;
 	private int pageMaxRows;
 	private int lastPageId;
+	private int lastIndexId;
+	private Vector<Integer> indecies;
 
 	public Table(String tableName, String clusteringKey, Hashtable<String, String> colNameType,
 			Hashtable<String, String> colNameMin, Hashtable<String, String> colNameMax, int pageMaxRows) {
@@ -33,6 +35,24 @@ public class Table implements Serializable {
 		pages = new Vector<>();
 		this.pageMaxRows = pageMaxRows;
 		lastPageId = 0;
+		lastIndexId = 0;
+		indecies = new Vector<>();
+	}
+
+	public Vector<Integer> getIndecies() {
+		return indecies;
+	}
+
+	public void setIndecies(Vector<Integer> indecies) {
+		this.indecies = indecies;
+	}
+
+	public int getLastIndexId() {
+		return lastIndexId;
+	}
+
+	public void setLastIndexId(int lastIndexId) {
+		this.lastIndexId = lastIndexId;
 	}
 
 	public String getTableName() {
@@ -224,45 +244,29 @@ public class Table implements Serializable {
 				if (!c.getDataType().equals("java.lang.String"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
-				try {
-					if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Integer) {
 				if (!c.getDataType().equals("java.lang.Integer"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Integer val2 = (Integer) val;
-				try {
-					if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Double) {
 				if (!c.getDataType().equals("java.lang.Double"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Double val2 = (Double) val;
-				try {
-					if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Date) {
 				if (!c.getDataType().equals("java.util.Date"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
-				try {
-					if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey()+" value: "+val2.toString());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException("invalid date format");
+				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey()+" value: "+val2.toString());
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -293,45 +297,29 @@ public class Table implements Serializable {
 				if (!c.getDataType().equals("java.lang.String"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
-				try {
-					if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
-						return false;
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
+					return false;
 				}
 			} else if (val instanceof Integer) {
 				if (!c.getDataType().equals("java.lang.Integer"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Integer val2 = (Integer) val;
-				try {
-					if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
-						return false;
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
+					return false;
 				}
 			} else if (val instanceof Double) {
 				if (!c.getDataType().equals("java.lang.Double"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Double val2 = (Double) val;
-				try {
-					if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
-						return false;
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
+					return false;
 				}
 			} else if (val instanceof Date) {
 				if (!c.getDataType().equals("java.util.Date"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
-				try {
-					if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-						return false;
-					}
-				} catch (ParseException e) {
-					throw new DBAppException("invalid date format");
+				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
+					return false;
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -347,18 +335,14 @@ public class Table implements Serializable {
 		} catch (DBAppException e) {
 			create_metadata();
 		}
-		try {
-			Comparable newClusteringKey = Utilities.parseType(clusteringKeyValue, clusteringKeyType);
-			loop: for (Column c : columns) {
-				if (c.getName().equals(clusteringKey)) {
-					if (newClusteringKey.compareTo(c.getMax()) > 0 && newClusteringKey.compareTo(c.getMin()) <= 0) {
-						throw new DBAppException("The clustering Key is out of bounds");
-					}
-					break loop;
+		Comparable newClusteringKey = Utilities.parseType(clusteringKeyValue, clusteringKeyType);
+		loop: for (Column c : columns) {
+			if (c.getName().equals(clusteringKey)) {
+				if (newClusteringKey.compareTo(c.getMax()) > 0 && newClusteringKey.compareTo(c.getMin()) <= 0) {
+					throw new DBAppException("The clustering Key is out of bounds");
 				}
+				break loop;
 			}
-		} catch (ParseException i) {
-			throw new DBAppException();
 		}
 
 		for (Map.Entry<String, Object> ent : columnNameValue.entrySet()) {
@@ -370,45 +354,29 @@ public class Table implements Serializable {
 				if (!c.getDataType().equals("java.lang.String"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
-				try {
-					if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Integer) {
 				if (!c.getDataType().equals("java.lang.Integer"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Integer val2 = (Integer) val;
-				try {
-					if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Integer) c.getMax())) > 0 || val2.compareTo(((Integer) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Double) {
 				if (!c.getDataType().equals("java.lang.Double"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Double val2 = (Double) val;
-				try {
-					if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException();
+				if (val2.compareTo(((Double) c.getMax())) > 0 || val2.compareTo(((Double) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Date) {
 				if (!c.getDataType().equals("java.util.Date"))
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
-				try {
-					if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-						throw new DBAppException("out of bounds value for column " + ent.getKey());
-					}
-				} catch (ParseException e) {
-					throw new DBAppException("invalid date format");
+				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
+					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -454,7 +422,7 @@ public class Table implements Serializable {
 			throw new DBAppException("invalid meta data file for table " + tableName);
 	}
 
-	private void create_metadata() {
+	public void create_metadata() {
 		try {
 			PrintWriter pw = new PrintWriter("src/main/resources/metadata.csv");
 			pw.println("Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max");
@@ -469,6 +437,37 @@ public class Table implements Serializable {
 			e.printStackTrace();
 		}
 
+	}
+
+	public Vector<Column> getCols(String[] columnNames) throws DBAppException {
+		for(int i=0;i<columnNames.length;i++)
+			for(int j=i+1;j<columnNames.length;j++){
+				if(columnNames[i].equals(columnNames[j]))
+					throw new DBAppException("There are 2 columns with name "+ columnNames[i]);
+			}
+		Vector<Column> cols = new Vector<>();
+		for (String col: columnNames){
+			if(getColumn(col)==null)
+				throw new DBAppException("There is no column named "+ col +" in table "+tableName);
+			cols.add(getColumn(col));
+		}
+		return cols;
+	}
+
+	public void populateIndex(GridIndex index) throws DBAppException {
+		for(Page page: pages){
+			page.readData();
+			Vector<Tuple> data = page.getData();
+			for(Tuple t: data){
+				Vector<Object> entryData = new Vector<>();
+				for(Column col: index.getColumns()){
+					int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
+					entryData.add(t.getIthVal(idxInTuple));
+				}
+				BucketEntry be = new BucketEntry(entryData, page.getId() , t.getIthVal(0));
+				index.insertEntry(be);
+			}
+		}
 	}
 //	public void updatePagesRecord() {
 //		for(Page p : pages) {

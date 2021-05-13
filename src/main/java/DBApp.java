@@ -1,8 +1,5 @@
 import java.io.*;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class DBApp implements DBAppInterface {
 	public int MaximumRowsCountinPage;
@@ -53,8 +50,22 @@ public class DBApp implements DBAppInterface {
 
 	@Override
 	public void createIndex(String tableName, String[] columnNames) throws DBAppException {
+		String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
+		Table table = (Table) Serializer.deserilize(path);
+		Vector<Column> cols = table.getCols(columnNames);
+		// edit metadata file
+		for(Column col: cols)
+			col.setIndexed(true);
+		table.create_metadata();
 
+		GridIndex index = new GridIndex(tableName, table.getLastIndexId(), MaximumKeysCountinIndexBucket, cols);
+		table.getIndecies().add(table.getLastIndexId());
+		table.setLastIndexId(table.getLastIndexId() + 1);
+
+		// insert all rows of the table in the newly created index
+		table.populateIndex(index);
 	}
+
 
 	@Override
 	public void insertIntoTable(String tableName, Hashtable<String, Object> colNameValue) throws DBAppException {

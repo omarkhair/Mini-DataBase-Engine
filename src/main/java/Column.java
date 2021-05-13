@@ -40,8 +40,8 @@ public class Column implements Serializable {
     }
 
     @SuppressWarnings("rawtypes")
-	public Comparable getMin() throws ParseException {
-        return parseType(min);
+	public Comparable getMin() throws DBAppException {
+        return Utilities.parseType(min, dataType);
     }
     
     public String getMinString() {
@@ -49,14 +49,15 @@ public class Column implements Serializable {
     }
 
     @SuppressWarnings("rawtypes")
-    public Comparable getMax() throws ParseException {
-        return parseType(max);
+    public Comparable getMax() throws DBAppException {
+        return Utilities.parseType(max, dataType);
     }
-    
+
+
     public String getMaxString() {
     	return max;
     }
-    
+
     public Comparable parseType(String val) throws ParseException {
     	if(dataType.equals("java.lang.Integer")) {
     		return Integer.parseInt(val);
@@ -65,7 +66,7 @@ public class Column implements Serializable {
     		return Double.parseDouble(val);
     	}
     	if(dataType.equals("java.util.Date")) {
-    		return new SimpleDateFormat("yyyy-MM-dd").parse(val);  
+    		return new SimpleDateFormat("yyyy-MM-dd").parse(val);
     	}
     	return val;
     }

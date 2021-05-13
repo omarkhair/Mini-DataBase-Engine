@@ -98,7 +98,11 @@ public class Page implements Serializable, Comparable {
     public void setNumberOfTuples(int numberOfTuples) {
         this.numberOfTuples = numberOfTuples;
     }
-    
+
+    public Vector<Tuple> getData() {
+        return data;
+    }
+
     public void deleteRecords(Hashtable<String, Object> colNameValue, Vector<Column> columns) throws DBAppException{
     	readData();
     	Vector<Tuple> toBeRemoved = new Vector<>();
