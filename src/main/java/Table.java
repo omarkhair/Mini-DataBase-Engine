@@ -454,6 +454,7 @@ public class Table implements Serializable {
 		return cols;
 	}
 
+	// this method fills the given grid index with all the entries found in the table
 	public void populateIndex(GridIndex index) throws DBAppException {
 		for(Page page: pages){
 			page.readData();
@@ -467,6 +468,8 @@ public class Table implements Serializable {
 				BucketEntry be = new BucketEntry(entryData, page.getId() , t.getIthVal(0));
 				index.insertEntry(be);
 			}
+			// free the page data that we are done working with from memory
+			page.setData(null);
 		}
 	}
 //	public void updatePagesRecord() {

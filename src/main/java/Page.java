@@ -103,6 +103,10 @@ public class Page implements Serializable, Comparable {
         return data;
     }
 
+    public void setData(Vector<Tuple> data) {
+        this.data = data;
+    }
+
     public void deleteRecords(Hashtable<String, Object> colNameValue, Vector<Column> columns) throws DBAppException{
     	readData();
     	Vector<Tuple> toBeRemoved = new Vector<>();
@@ -186,5 +190,5 @@ public class Page implements Serializable, Comparable {
 		this.id = id ; 
 	}
 
-	
+
 }
