@@ -13,7 +13,7 @@ public class Utilities {
                 return Double.parseDouble(val);
             }
             if (dataType.equals("java.util.Date")) {
-                return new SimpleDateFormat("YYYY-MM-DD").parse(val);
+                return new SimpleDateFormat("yyyy-MM-dd").parse(val);
             }
             return val;
         } catch (ParseException i) {

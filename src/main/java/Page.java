@@ -63,15 +63,41 @@ public class Page implements Serializable, Comparable {
         writeData();
         data = null;
     }
+    // This is a faster version but you need to handle syncing with the data on disk
+    public void insertRecordInMemory(Tuple t) throws DBAppException{
+        if(data == null)
+            readData();
+        //check if it is the first entry
+        if(data.contains(t))
+            throw new DBAppException("Primary key already exists in table");
+        numberOfTuples++;
+        data.add(t);
+        Collections.sort(data);
+        updateMinMax();
+    }
     
     public Tuple removeLastRecord() throws DBAppException{
     	readData();
+        if(numberOfTuples == 0)
+            return null;
     	numberOfTuples--;
     	Tuple t = data.remove(data.size()-1);
     	updateMinMax();
     	writeData();
     	data = null;
     	return t;
+    }
+
+    // This is a faster version but you need to handle syncing with the data on disk (serialization)
+    public Tuple removeLastRecordInMemory() throws DBAppException{
+        if(data == null)
+            readData();
+        if(numberOfTuples == 0)
+            return null;
+        numberOfTuples--;
+        Tuple t = data.remove(data.size()-1);
+        updateMinMax();
+        return t;
     }
 
     public void updateMinMax() {

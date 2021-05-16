@@ -115,8 +115,8 @@ public class Table implements Serializable {
 					Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++);
 					currentPage.insertRecord(t);
 					Tuple lastRecord = currentPage.removeLastRecord();
-					pages.add(nextPage);
 					nextPage.insertRecord(lastRecord);
+					pages.add(nextPage);
 					return;
 				}
 				Page nextPage = pages.get(target + 1);
@@ -128,15 +128,19 @@ public class Table implements Serializable {
 				}
 				// current and next pages are both full, and an overflow page is needed
 				Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++);
-				currentPage.insertRecord(t);
+				currentPage.insertRecordInMemory(t);
 				for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
-					overflowPage.insertRecord(currentPage.removeLastRecord());
+					overflowPage.insertRecordInMemory(currentPage.removeLastRecordInMemory());
 				}
 				pages.add(target + 1, overflowPage);
-
+				currentPage.writeData();
+				currentPage.setData(null);
+				overflowPage.writeData();
+				overflowPage.setData(null);
 			}
 		}
 	}
+
 
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
