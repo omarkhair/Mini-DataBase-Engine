@@ -57,11 +57,10 @@ public class DBApp implements DBAppInterface {
 		for(Column col: cols)
 			col.setIndexed(true);
 		table.create_metadata();
-
+		
 		GridIndex index = new GridIndex(tableName, table.getLastIndexId(), MaximumKeysCountinIndexBucket, cols);
-		table.getIndecies().add(table.getLastIndexId());
+		table.getIndecies().add(index);
 		table.setLastIndexId(table.getLastIndexId() + 1);
-
 		// insert all rows of the table in the newly created index
 		table.populateIndex(index);
 	}
@@ -130,19 +129,24 @@ public class DBApp implements DBAppInterface {
 
 	public static void main(String[] args) throws DBAppException, InterruptedException {
 	DBApp dbApp = new DBApp();
-//        Hashtable htblColNameType = new Hashtable( );
-//        htblColNameType.put("id", "java.lang.Integer");
-//        htblColNameType.put("name", "java.lang.String");
-//        htblColNameType.put("gpa", "java.lang.Double");
-//        Hashtable htblColNameMin = new Hashtable( );
-//        htblColNameMin.put("id", "0");
-//        htblColNameMin.put("name", "a");
-//        htblColNameMin.put("gpa", "1");
-//        Hashtable htblColNameMax = new Hashtable( );
-//        htblColNameMax.put("id", "1000");
-//        htblColNameMax.put("name", "zzzzzzzzzzzzzzz");
-//        htblColNameMax.put("gpa", "4");
-//        dbApp.createTable( "Student", "id", htblColNameType ,htblColNameMin,htblColNameMax);
+        Hashtable htblColNameType = new Hashtable( );
+        htblColNameType.put("id", "java.lang.Integer");
+        htblColNameType.put("name", "java.lang.String");
+        htblColNameType.put("gpa", "java.lang.Double");
+        htblColNameType.put("birthdate", "java.util.Date");
+        Hashtable htblColNameMin = new Hashtable( );
+        htblColNameMin.put("id", "0");
+        htblColNameMin.put("name", "a");
+        htblColNameMin.put("gpa", "1");
+        htblColNameMin.put("birthdate", "2000-01-01");
+        Hashtable htblColNameMax = new Hashtable( );
+        htblColNameMax.put("id", "1000");
+        htblColNameMax.put("name", "z");
+        htblColNameMax.put("gpa", "4");
+        htblColNameMax.put("birthdate", "2022-01-01");
+        dbApp.createTable( "testIndex", "id", htblColNameType ,htblColNameMin,htblColNameMax);
+        String[] colnames = {"name","gpa","id","birthdate"};
+        dbApp.createIndex("testIndex", colnames);
 //		for (int i = 0; i < 30; i+=3) {
 //			Hashtable record1 = new Hashtable();
 //			record1.put("id", i);
@@ -170,17 +174,17 @@ public class DBApp implements DBAppInterface {
 //		record1.put("gpa", 2.0);
 //		dbApp.insertIntoTable("Student", record1);
 //		for(int i=6;i<12;i++) {
-		 Hashtable<String, Object> ht = new Hashtable<>();
-			ht.put("id", 37);
-			ht.put("gpa", 2.6);
-			ht.put("name","mohamed"); 
-			dbApp.updateTable("Student", "9",ht);
-//			 
-////		}
-
-		Table table = (Table) Serializer.deserilize("src/main/resources/data/Student/Student.ser");
-		System.out.println(table);
-		
+//		 Hashtable<String, Object> ht = new Hashtable<>();
+//			ht.put("id", 37);
+//			ht.put("gpa", 2.6);
+//			ht.put("name","mohamed"); 
+//			dbApp.updateTable("Student", "9",ht);
+////			 
+//////		}
+//
+//		Table table = (Table) Serializer.deserilize("src/main/resources/data/Student/Student.ser");
+//		System.out.println(table);
+//		
 		// dbApp.createTable("Employee", "id", colNameType, colNameMin, colNameMax);
 
 	}

@@ -14,7 +14,7 @@ public class Table implements Serializable {
 	private int pageMaxRows;
 	private int lastPageId;
 	private int lastIndexId;
-	private Vector<Integer> indecies;
+	private Vector<GridIndex> indecies;
 
 	public Table(String tableName, String clusteringKey, Hashtable<String, String> colNameType,
 			Hashtable<String, String> colNameMin, Hashtable<String, String> colNameMax, int pageMaxRows) {
@@ -39,11 +39,11 @@ public class Table implements Serializable {
 		indecies = new Vector<>();
 	}
 
-	public Vector<Integer> getIndecies() {
+	public Vector<GridIndex> getIndecies() {
 		return indecies;
 	}
 
-	public void setIndecies(Vector<Integer> indecies) {
+	public void setIndecies(Vector<GridIndex> indecies) {
 		this.indecies = indecies;
 	}
 
@@ -476,9 +476,4 @@ public class Table implements Serializable {
 			page.setData(null);
 		}
 	}
-//	public void updatePagesRecord() {
-//		for(Page p : pages) {
-//			p.setId(pages.indexOf(p)); 
-//		}
-//	}
 }

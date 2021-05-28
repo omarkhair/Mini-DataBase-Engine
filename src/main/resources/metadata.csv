@@ -1,6 +1,5 @@
 Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max
-students,id,java.lang.String,True,False,43-0000,99-9999
-students,gpa,java.lang.Double,False,False,0.7,5.0
-students,last_name,java.lang.String,False,False,AAAAAA,zzzzzz
-students,first_name,java.lang.String,False,False,AAAAAA,zzzzzz
-students,dob,java.util.Date,False,False,1990-01-01,2000-12-31
+testIndex,id,java.lang.Integer,True,False,0,1000
+testIndex,gpa,java.lang.Double,False,False,1,4
+testIndex,birthdate,java.util.Date,False,False,2000-01-01,2022-01-01
+testIndex,name,java.lang.String,False,False,a,z
