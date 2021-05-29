@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Vector;
@@ -39,7 +40,30 @@ public class Bucket implements Serializable{
 		writeData();
 		entries = null;
 	}
-
+	public boolean removeBucketEntry(BucketEntry entry) throws DBAppException {
+		readData();
+		boolean success = entries.remove(entry);
+		if(success) {
+			numberOfEntries--;
+			writeData();
+		}
+		entries = null;
+		return success;
+	}
+	public BucketEntry removeLastEntry() throws DBAppException {
+		readData();
+		if(numberOfEntries == 0)
+			return null;
+		numberOfEntries--;
+		BucketEntry entry = entries.remove(entries.size()-1);
+		writeData();
+		entries = null;
+		return entry;
+	}
+	public void deleteBucketFromDisk() {
+		File f = new File(path);
+		f.delete();
+	}
 	public Vector<BucketEntry> getEntries() {
 		return entries;
 	}
@@ -62,5 +86,13 @@ public class Bucket implements Serializable{
 
 	public void setPath(String path) {
 		this.path = path;
+	}
+
+	public int getNumberOfEntries() {
+		return numberOfEntries;
+	}
+
+	public void setNumberOfEntries(int numberOfEntries) {
+		this.numberOfEntries = numberOfEntries;
 	}
 }

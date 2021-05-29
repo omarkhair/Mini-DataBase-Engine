@@ -41,5 +41,12 @@ public class BucketEntry implements Serializable {
 	public String toString(){
 		return data.toString() + " in page with ID " + pageId;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if(!(o instanceof BucketEntry))
+			return false;
+		return this.clusteringKeyValue.equals(((BucketEntry)o).clusteringKeyValue);
+	}
 	
 }

@@ -26,6 +26,7 @@ public class Cell implements Serializable{
 		this.buckets = buckets;
 	}
 
+	// this method assumes that all buckets are full except for the last one, it inserts directly to it
 	public void insertEntry(BucketEntry entry) throws DBAppException {
 		if(buckets.size() == 0){
 			buckets.add(new Bucket(tableName,lastBucket_id++,index_id,id));
@@ -41,4 +42,24 @@ public class Cell implements Serializable{
 	}
 
 
+	public void deleteEntry(BucketEntry entry) throws DBAppException {
+		int n = buckets.size();
+		for(int i=0;i<n;i++){
+			Bucket bucket = buckets.get(i);
+			if(bucket.removeBucketEntry(entry)){
+				// the target entry was found and removed
+				// We will maintain the property that only the last page can have empty space
+				// by taking an element from the last Bucket and putting it in this bucket
+				Bucket lastBucket = buckets.get(n-1);
+				if(i < n-1){
+					bucket.insertBucketEntry(lastBucket.removeLastEntry());
+				}
+				if(lastBucket.getNumberOfEntries() == 0){
+					lastBucket.deleteBucketFromDisk();
+					buckets.remove(n-1);
+				}
+				break;
+			}
+		}
+	}
 }

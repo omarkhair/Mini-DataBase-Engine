@@ -132,7 +132,7 @@ public class GridIndex implements Serializable {
 		return (Cell) res;
 	}
 
-	public void insertEntry(BucketEntry be) throws DBAppException {
+	private int[] getIdxOfEntry(BucketEntry be) {
 		int[] cellIdx = new int[dim];
 		for (int i = 0; i < dim; i++) {
 			Comparable key = (Comparable) be.getData().get(i);
@@ -148,8 +148,17 @@ public class GridIndex implements Serializable {
 				}
 			}
 		}
-
+		return cellIdx;
+	}
+	public void insertEntry(BucketEntry be) throws DBAppException {
+		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.insertEntry(be);
 	}
+	public void deleteEntry(BucketEntry be) throws DBAppException {
+		int[] cellIdx = getIdxOfEntry(be);
+		Cell targetCell = access(cellIdx);
+		targetCell.deleteEntry(be);
+	}
+
 }

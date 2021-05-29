@@ -464,7 +464,7 @@ public class Table implements Serializable, TableObserver {
 			page.readData();
 			Vector<Tuple> data = page.getData();
 			for(Tuple t: data){
-				BucketEntry be = creatBucketEntry(t,page.getId(),index);
+				BucketEntry be = createBucketEntry(t,page.getId(),index);
 				index.insertEntry(be);
 			}
 			
@@ -473,7 +473,7 @@ public class Table implements Serializable, TableObserver {
 		}
 	}
 	
-	public BucketEntry creatBucketEntry(Tuple t, int pageId, GridIndex index) {
+	public BucketEntry createBucketEntry(Tuple t, int pageId, GridIndex index) {
 		Vector<Object> entryData = new Vector<>();
 		for(Column col: index.getColumns()){
 			int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
