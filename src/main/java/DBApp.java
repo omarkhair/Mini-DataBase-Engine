@@ -63,6 +63,7 @@ public class DBApp implements DBAppInterface {
 		table.setLastIndexId(table.getLastIndexId() + 1);
 		// insert all rows of the table in the newly created index
 		table.populateIndex(index);
+		Serializer.serialize(path, table);
 	}
 
 

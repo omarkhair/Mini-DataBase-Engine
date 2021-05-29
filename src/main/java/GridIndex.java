@@ -17,7 +17,6 @@ public class GridIndex implements Serializable {
 	private Object[] arr;
 	private int maximumNoEntries;
 	private Vector<Column> columns;
-	private String path;
 	private Object[][] range;
 
 	public GridIndex(String tableName, int id, int maximumNoEntries, Vector<Column> columns) throws DBAppException {
@@ -28,19 +27,11 @@ public class GridIndex implements Serializable {
 		arr = createArray(dim);
 		cell_id = 0;
 		this.columns = columns;
-		path = "src/main/resources/data/" + tableName + "/index" + id + "/index" + id + ".ser";
 		String dir = "src/main/resources/data/" + tableName + "/index" + id;
 		File file = new File(dir);
 		file.mkdir();
 		// create division ranges for columns
 		createRangeArray();
-		Serializer.serialize(path, this);
-		for(int i = 0;i<dim;i++) {
-			for(int j = 0 ; j<11;j++) {
-				System.out.print(range[i][j]+" ");
-			}
-			System.out.println();
-		}
 	}
 
 	public Vector<Column> getColumns() {

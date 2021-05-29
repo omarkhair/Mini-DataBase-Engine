@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.text.ParseException;
 import java.util.*;
 
-public class Table implements Serializable {
+public class Table implements Serializable, TableObserver {
 	private String tableName;
 	private String clusteringKey;
 	private String clusteringKeyType;
@@ -101,7 +101,7 @@ public class Table implements Serializable {
 
 	public void insertRecordOverflow(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
-			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++, this);
 			pages.add(page);
 			page.insertRecord(t);
 		} else {
@@ -112,7 +112,7 @@ public class Table implements Serializable {
 				return;
 			} else {
 				if (target == pages.size() - 1) {
-					Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++);
+					Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
 					currentPage.insertRecord(t);
 					Tuple lastRecord = currentPage.removeLastRecord();
 					nextPage.insertRecord(lastRecord);
@@ -127,7 +127,7 @@ public class Table implements Serializable {
 					return;
 				}
 				// current and next pages are both full, and an overflow page is needed
-				Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++);
+				Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
 				currentPage.insertRecordInMemory(t);
 				for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
 					overflowPage.insertRecordInMemory(currentPage.removeLastRecordInMemory());
@@ -144,7 +144,7 @@ public class Table implements Serializable {
 
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
-			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++, this);
 			pages.add(page);
 			// Collections.sort(pages);
 			page.insertRecord(t);
@@ -161,7 +161,7 @@ public class Table implements Serializable {
 					t = currentPage.removeLastRecord();
 				}
 			}
-			Page page = new Page(tableName, clusteringKeyType, lastPageId++);
+			Page page = new Page(tableName, clusteringKeyType, lastPageId++, this);
 			pages.add(page);
 			// Collections.sort(pages);
 			page.insertRecord(t);
@@ -464,16 +464,34 @@ public class Table implements Serializable {
 			page.readData();
 			Vector<Tuple> data = page.getData();
 			for(Tuple t: data){
-				Vector<Object> entryData = new Vector<>();
-				for(Column col: index.getColumns()){
-					int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
-					entryData.add(t.getIthVal(idxInTuple));
-				}
-				BucketEntry be = new BucketEntry(entryData, page.getId() , t.getIthVal(0));
+				BucketEntry be = creatBucketEntry(t,page.getId(),index);
 				index.insertEntry(be);
 			}
+			
 			// free the page data that we are done working with from memory
 			page.setData(null);
 		}
+	}
+	
+	public BucketEntry creatBucketEntry(Tuple t, int pageId, GridIndex index) {
+		Vector<Object> entryData = new Vector<>();
+		for(Column col: index.getColumns()){
+			int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
+			entryData.add(t.getIthVal(idxInTuple));
+		}
+		BucketEntry be = new BucketEntry(entryData, pageId , t.getIthVal(0));
+		return be;
+	}
+
+	@Override
+	public void notifyInsert(int pageId, Tuple t) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void notifyDelete(int pageId, Tuple t) {
+		// TODO Auto-generated method stub
+		
 	}
 }
