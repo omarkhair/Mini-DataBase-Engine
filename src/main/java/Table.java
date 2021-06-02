@@ -88,15 +88,19 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public void insertRecord(Hashtable<String, Object> colNameValue) throws DBAppException {
+		Tuple t = createTuple(colNameValue);
+		insertRecordOverflow(t);
+//the commented method shifts all full pages to insert instead of creating extra pages
+//		insertRecordHelper(t);
+	}
+
+	public Tuple createTuple(Hashtable<String, Object> colNameValue) {
 		Vector<Object> data = new Vector<>();
 		for (Column c : columns) {
 			data.add(colNameValue.getOrDefault(c.getName(), null));
 		}
 		Tuple t = new Tuple(data);
-		insertRecordOverflow(t);
-
-//the commented method shifts all full pages to insert instead of creating extra pages
-//		insertRecordHelper(t);
+		return t;
 	}
 
 	public void insertRecordOverflow(Tuple t) throws DBAppException {
@@ -140,7 +144,6 @@ public class Table implements Serializable, TableObserver {
 			}
 		}
 	}
-
 
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
@@ -270,7 +273,8 @@ public class Table implements Serializable, TableObserver {
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
 				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-					throw new DBAppException("out of bounds value for column " + ent.getKey()+" value: "+val2.toString());
+					throw new DBAppException(
+							"out of bounds value for column " + ent.getKey() + " value: " + val2.toString());
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -444,54 +448,82 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public Vector<Column> getCols(String[] columnNames) throws DBAppException {
-		for(int i=0;i<columnNames.length;i++)
-			for(int j=i+1;j<columnNames.length;j++){
-				if(columnNames[i].equals(columnNames[j]))
-					throw new DBAppException("There are 2 columns with name "+ columnNames[i]);
+		for (int i = 0; i < columnNames.length; i++)
+			for (int j = i + 1; j < columnNames.length; j++) {
+				if (columnNames[i].equals(columnNames[j]))
+					throw new DBAppException("There are 2 columns with name " + columnNames[i]);
 			}
 		Vector<Column> cols = new Vector<>();
-		for (String col: columnNames){
-			if(getColumn(col)==null)
-				throw new DBAppException("There is no column named "+ col +" in table "+tableName);
+		for (String col : columnNames) {
+			if (getColumn(col) == null)
+				throw new DBAppException("There is no column named " + col + " in table " + tableName);
 			cols.add(getColumn(col));
 		}
 		return cols;
 	}
 
-	// this method fills the given grid index with all the entries found in the table
+	// this method fills the given grid index with all the entries found in the
+	// table
 	public void populateIndex(GridIndex index) throws DBAppException {
-		for(Page page: pages){
+		for (Page page : pages) {
 			page.readData();
 			Vector<Tuple> data = page.getData();
-			for(Tuple t: data){
-				BucketEntry be = createBucketEntry(t,page.getId(),index);
+			for (Tuple t : data) {
+				BucketEntry be = createBucketEntry(t, page.getId(), index);
 				index.insertEntry(be);
 			}
-			
+
 			// free the page data that we are done working with from memory
 			page.setData(null);
 		}
 	}
-	
+
 	public BucketEntry createBucketEntry(Tuple t, int pageId, GridIndex index) {
 		Vector<Object> entryData = new Vector<>();
-		for(Column col: index.getColumns()){
+		for (Column col : index.getColumns()) {
 			int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
 			entryData.add(t.getIthVal(idxInTuple));
 		}
-		BucketEntry be = new BucketEntry(entryData, pageId , t.getIthVal(0));
+		BucketEntry be = new BucketEntry(entryData, pageId, t.getIthVal(0));
 		return be;
 	}
 
 	@Override
-	public void notifyInsert(int pageId, Tuple t) {
-		// TODO Auto-generated method stub
-		
+	public void notifyInsert(int pageId, Tuple t) throws DBAppException {
+		for (GridIndex index : indecies) {
+			BucketEntry be = createBucketEntry(t, pageId, index);
+			index.insertEntry(be);
+		}
+
 	}
 
 	@Override
-	public void notifyDelete(int pageId, Tuple t) {
-		// TODO Auto-generated method stub
+	public void notifyDelete(int pageId, Tuple t) throws DBAppException {
+		for (GridIndex index : indecies) {
+			BucketEntry be = createBucketEntry(t, pageId, index);
+			index.deleteEntry(be);
+		}
+
+	}
+
+	public void deleteUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
+		Vector<String> columNames = new Vector<String>();
+		for (Map.Entry<String, Object> val : colNameValue.entrySet()) {
+			columNames.add(val.getKey());
+		}
+		GridIndex target = null;
+		int count = -1;
+		for (GridIndex index : indecies) {
+			if (index.getnumOfMatchingCols(columNames) > count) {
+				target = index;
+				count = index.getnumOfMatchingCols(columNames);
+			}
+		}
+		if(count==) {
+			deleteRecords(colNameValue);
+			return ; 
+		}
 		
 	}
+
 }

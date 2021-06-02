@@ -150,15 +150,32 @@ public class GridIndex implements Serializable {
 		}
 		return cellIdx;
 	}
+
 	public void insertEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.insertEntry(be);
 	}
+
 	public void deleteEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.deleteEntry(be);
+	}
+
+	public int getnumOfMatchingCols(Vector<String> columNames) {
+		int count = 0;
+		for (Column c : columns) {
+			if (columNames.contains(c.getName()))
+				count++;
+		}
+		return count;
+	}
+	public Vector<Cell> TargetCells(Hashtable<String, Object> colNameValue){
+		for(Column c : columns) {
+			for()
+		}
+		
 	}
 
 }

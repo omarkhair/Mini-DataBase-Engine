@@ -71,6 +71,21 @@ public class Utilities {
 		}
 		return -1;
 	}
+	public static Vector<Vector<Integer>> permutations(int dim, int min, int max){
+		Vector<Vector<Integer>> res = new Vector<Vector<Integer>>();
+		if(dim == 0) {
+			res.add(new Vector<Integer>());
+			return res;
+		}
+		Vector<Vector<Integer>> prev = permutations(dim - 1, min, max);
+		for(Vector<Integer> vec:prev)
+			for(int i=min;i<=max;i++) {
+				Vector<Integer> k =  ((Vector<Integer>)vec.clone());
+				k.add(i);
+				res.add(k);
+			}
+		return res;		
+	}
 	public static void main(String[] args) {
 		String s = "ahdhgds12134877sjkf.nxdknzjksdj%^%5212323";
 		BigInteger res = stringToInteger(s);
