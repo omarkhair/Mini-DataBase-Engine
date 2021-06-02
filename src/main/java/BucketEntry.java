@@ -39,7 +39,7 @@ public class BucketEntry implements Serializable {
 	}
 
 	public String toString(){
-		return data.toString() + " in page with ID " + pageId;
+		return data.toString() + " in page with ID " + pageId + " clustering key is "+clusteringKeyValue;
 	}
 
 	@Override

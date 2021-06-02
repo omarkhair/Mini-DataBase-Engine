@@ -1,11 +1,9 @@
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Hashtable;
-import java.util.Scanner;
+import java.util.HashSet;
 import java.util.Vector;
 
 @SuppressWarnings("serial")
@@ -121,7 +119,7 @@ public class GridIndex implements Serializable {
 
 	}
 
-	@SuppressWarnings({ "unchecked", "unused" })
+	@SuppressWarnings({ "unused" })
 	public Cell access(int[] indecies) {
 		if (indecies.length != dim)
 			return null;
@@ -132,17 +130,22 @@ public class GridIndex implements Serializable {
 		return (Cell) res;
 	}
 
+	@SuppressWarnings("unchecked")
 	private int[] getIdxOfEntry(BucketEntry be) {
 		int[] cellIdx = new int[dim];
 		for (int i = 0; i < dim; i++) {
+			@SuppressWarnings("rawtypes")
 			Comparable key = (Comparable) be.getData().get(i);
 			if (columns.get(i).getDataType().equals("java.util.Date")) {
 				SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd");
 				key = Utilities.dateToDays(s.format((Date) key));
 			}
 			Object[] limits = range[i];
+			if(key.equals(limits[10])) {
+				cellIdx[i] = 9;
+			}
 			for (int j = 1; j < 11; j++) {
-				if (key.compareTo(limits[j]) <= 0) {
+				if (key.compareTo(limits[j]) < 0) {
 					cellIdx[i] = j - 1;
 					break;
 				}
@@ -150,32 +153,60 @@ public class GridIndex implements Serializable {
 		}
 		return cellIdx;
 	}
-
 	public void insertEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.insertEntry(be);
 	}
-
 	public void deleteEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.deleteEntry(be);
 	}
-
-	public int getnumOfMatchingCols(Vector<String> columNames) {
-		int count = 0;
-		for (Column c : columns) {
-			if (columNames.contains(c.getName()))
-				count++;
+	
+	private boolean increment(int[] tmp,int i) {
+		if(i==tmp.length+1)
+			return false;
+		tmp[tmp.length-i]++;
+		if(tmp[tmp.length-i]==10) {
+			tmp[tmp.length-i]=0;
+			return increment(tmp,i+1);
 		}
-		return count;
+		return true;
 	}
-	public Vector<Cell> TargetCells(Hashtable<String, Object> colNameValue){
-		for(Column c : columns) {
-			for()
+	
+	private String getRanges(int[] tmp) {
+		String res = "";
+		for(int i = 0; i< dim; i++) {
+			res += columns.get(i).getName()+" has range of: ";
+			res += range[i][tmp[i]]+"->"+range[i][tmp[i]+1]+"\n";
 		}
+		return res+"\n";
+	}
+	
+	public String toString(){
+		String res = "This is Grid Index with id "+ id +" on table "+tableName+"\n";
+		int[] tmp = new int[dim];
+		do {
+			res+= "--------------------------------------------------------------------------------------\n";
+			res+= "Cell ranges are: \n";
+			res+= getRanges(tmp);
+			res+=access(tmp).toString();
+		} while(increment(tmp,1));
+		return res;
+	}
+
+	public HashSet<Integer> getPagesIds(Vector<SQLTerm> sqlTerms) {
+		// TODO Auto-generated method stub
+		Vector<Vector<Integer>> cellIndecies = getCellIndecies(0, sqlTerms);
+		return null;
+	}
+
+	private Vector<Vector<Integer>> getCellIndecies(int i, Vector<SQLTerm> sqlTerms) {
+		Vector<Vector<Integer>> res = new Vector<>();
+		//if(i == )
 		
+		return null;
 	}
 
 }

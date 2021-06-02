@@ -1,4 +1,5 @@
 import java.io.*;
+import java.sql.Date;
 import java.util.*;
 
 public class DBApp implements DBAppInterface {
@@ -64,6 +65,7 @@ public class DBApp implements DBAppInterface {
 		// insert all rows of the table in the newly created index
 		table.populateIndex(index);
 		Serializer.serialize(path, table);
+		//System.out.println(index);
 	}
 
 
@@ -100,15 +102,93 @@ public class DBApp implements DBAppInterface {
 		Serializer.serialize(path, table);
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public Iterator selectFromTable(SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
-		return null;
+		Table table = (Table) Serializer.deserilize("src/main/resources/data/"+sqlTerms[0].get_strTableName()+"/"+sqlTerms[0].get_strTableName()+".ser");
+		Vector<Column> selectColumns = validateSelect(sqlTerms,arrayOperators,table);
+		Vector<SQLTerm> andedTerms = new Vector<SQLTerm>();
+		andedTerms.add(sqlTerms[0]);
+		int i = 1;
+		HashSet<Integer> pagesIds = new HashSet<Integer>();
+		for(String s : arrayOperators) {
+			if(s.equals("AND")) {
+				andedTerms.add(sqlTerms[i]);
+			}
+			else {
+				try {
+					pagesIds.addAll(computeAND(andedTerms, table));
+				}
+				catch(NoIndexFoundException e) {
+					pagesIds = table.getAllPagesIds();
+					break;
+				}
+				andedTerms.removeAllElements();
+			}
+			i++;
+		}
+		
+		return table.evaluateSelect(pagesIds,sqlTerms,arrayOperators);
+
+	}
+
+	private HashSet<Integer> computeAND(Vector<SQLTerm> andedTerms, Table table) throws NoIndexFoundException{
+		GridIndex g = table.getBestIndex(andedTerms);
+		if(g==null) throw new NoIndexFoundException();
+		Vector<SQLTerm> andedTermsInIndex = getAndedTermsInIndex(g,andedTerms);
+		return g.getPagesIds(andedTermsInIndex);
+	}
+
+	private Vector<SQLTerm> getAndedTermsInIndex(GridIndex g, Vector<SQLTerm> andedTerms) {
+		Vector<SQLTerm> res = new Vector<SQLTerm>();
+		for(Column c : g.getColumns())
+			for(SQLTerm t : andedTerms)
+				if(c.sameColumn(t))
+					res.add(t);
+		return res;
+	}
+
+	private Vector<Column> validateSelect(SQLTerm[] sqlTerms, String[] arrayOperators, Table table) throws DBAppException {
+		Vector<Column> res = new Vector<Column>();
+		for(SQLTerm t: sqlTerms) {
+			Column flag = null;
+			if(!t.get_strTableName().equals(table.getTableName()))
+				throw new DBAppException("Passed SQL Terms select from different tables "+t.get_strTableName()+" and "+table.getTableName());
+			for(Column c : table.getColumns()) {
+				if(c.getName().equals(t.get_strColumnName()))
+					flag = c;
+			}
+			if(flag==null)
+				throw new DBAppException("Column "+t.get_strColumnName()+" does not exist in table "+table.getTableName());
+			else
+				res.add(flag);
+			if(t.get_strOperator()!=">"&&t.get_strOperator()!=">="&&t.get_strOperator()!="<"&&
+					t.get_strOperator()!="<="&&t.get_strOperator()!="!="&&t.get_strOperator()!="=")
+				throw new DBAppException("undefined operator "+t.get_strOperator());
+			//Utilities.parseType(flag.getDataType(), dataType);
+			if(flag.getDataType().equals("java.lang.Integer")&&!(t.get_objValue() instanceof Integer))
+				throw new DBAppException("Select term data type mismatch");
+			if(flag.getDataType().equals("java.lang.Double")&&!(t.get_objValue() instanceof Double))
+				throw new DBAppException("Select term data type mismatch");
+			if(flag.getDataType().equals("java.lang.String")&&!(t.get_objValue() instanceof String))
+				throw new DBAppException("Select term data type mismatch");
+			if(flag.getDataType().equals("java.util.Date")&&!(t.get_objValue() instanceof Date))
+				throw new DBAppException("Select term data type mismatch");
+		}
+		for(String o:arrayOperators) {
+			if(!o.equals("AND")&&!o.equals("OR")&&!o.equals("XOR"))
+				throw new DBAppException("undefined operator "+o);
+		}
+		if(arrayOperators.length != sqlTerms.length-1)
+			throw new DBAppException("Number of operators has to match the number of the terms");
+		return res;
 	}
 
 	public void readConfig() {
 		String path = "src/main/resources/DBApp.config";
 
 		try {
+			@SuppressWarnings("resource")
 			BufferedReader br = new BufferedReader(new FileReader(path));
 			StringTokenizer st = new StringTokenizer(br.readLine());
 			st.nextToken();
@@ -130,36 +210,44 @@ public class DBApp implements DBAppInterface {
 
 	public static void main(String[] args) throws DBAppException, InterruptedException {
 	DBApp dbApp = new DBApp();
-        Hashtable htblColNameType = new Hashtable( );
-        htblColNameType.put("id", "java.lang.Integer");
-        htblColNameType.put("name", "java.lang.String");
-        htblColNameType.put("gpa", "java.lang.Double");
-        htblColNameType.put("birthdate", "java.util.Date");
-        Hashtable htblColNameMin = new Hashtable( );
-        htblColNameMin.put("id", "0");
-        htblColNameMin.put("name", "a");
-        htblColNameMin.put("gpa", "1");
-        htblColNameMin.put("birthdate", "2000-01-01");
-        Hashtable htblColNameMax = new Hashtable( );
-        htblColNameMax.put("id", "1000");
-        htblColNameMax.put("name", "z");
-        htblColNameMax.put("gpa", "4");
-        htblColNameMax.put("birthdate", "2022-01-01");
-        dbApp.createTable( "testIndex", "id", htblColNameType ,htblColNameMin,htblColNameMax);
-        String[] colnames = {"name","gpa","id","birthdate"};
-        dbApp.createIndex("testIndex", colnames);
+//        Hashtable htblColNameType = new Hashtable( );
+//        htblColNameType.put("id", "java.lang.Integer");
+//        htblColNameType.put("name", "java.lang.String");
+//        htblColNameType.put("gpa", "java.lang.Double");
+//        Hashtable htblColNameMin = new Hashtable( );
+//        htblColNameMin.put("id", "0");
+//        htblColNameMin.put("name", "a");
+//        htblColNameMin.put("gpa", "1");
+//        Hashtable htblColNameMax = new Hashtable( );
+//        htblColNameMax.put("id", "1000");
+//        htblColNameMax.put("name", "z");
+//        htblColNameMax.put("gpa", "4");
+//        dbApp.createTable( "test", "id", htblColNameType ,htblColNameMin,htblColNameMax);
+//        char x = 'a';
+//        boolean t = true;
+//		for (int i = 0; i <= 22; i++) {
+//		Hashtable record1 = new Hashtable();
+//		record1.put("id", i);
+//		record1.put("name", ""+x);
+//		if(t)
+//			x++;
+//		t = !t;
+//		record1.put("gpa", 2.0);
+//		dbApp.insertIntoTable("test", record1);
+//		}
+		
+		Table table = (Table) Serializer.deserilize("src/main/resources/data/test/test.ser");
+		//System.out.println(table.getIndecies().size());
+        //String[] colnames = {"name","id"};
+        //dbApp.createIndex("test", colnames);
+        
+        System.out.println(table.getIndecies().get(1));
+        //System.out.println(table.getIndecies().size());
 //		for (int i = 0; i < 30; i+=3) {
 //			Hashtable record1 = new Hashtable();
 //			record1.put("id", i);
 //			record1.put("name", "ahmed");
 //			record1.put("gpa", 3.0);
-//			dbApp.insertIntoTable("Student", record1);
-//		}
-//		for (int i = 1; i < 30; i+=3) {
-//			Hashtable record1 = new Hashtable();
-//			record1.put("id", i);
-//			record1.put("name", "ahmed");
-//			record1.put("gpa", 2.0);
 //			dbApp.insertIntoTable("Student", record1);
 //		}
 //		for (int i = 2; i < 30; i+=3) {

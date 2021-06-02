@@ -1,6 +1,5 @@
 import java.io.File;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.Vector;
 
 @SuppressWarnings("serial")
@@ -26,10 +25,14 @@ public class Bucket implements Serializable{
 		entries = null;
 	}
 	public void writeData(){
+		File directory = new File("src/main/resources/data/"+ tableName +"/index"+index_id+"/cell"+cell_id);
+		if (! directory.exists())
+	        directory.mkdir();
 		Serializer.serialize(path, entries);
 	}
 	// important note: whenever you use readData(), set data Vector to null to
 	// free it from memory
+	@SuppressWarnings("unchecked")
 	public void readData() throws DBAppException{
 		entries = (Vector<BucketEntry>) Serializer.deserilize(path);
 	}
@@ -64,7 +67,8 @@ public class Bucket implements Serializable{
 		File f = new File(path);
 		f.delete();
 	}
-	public Vector<BucketEntry> getEntries() {
+	public Vector<BucketEntry> getEntries() throws DBAppException {
+		readData();
 		return entries;
 	}
 
@@ -94,5 +98,15 @@ public class Bucket implements Serializable{
 
 	public void setNumberOfEntries(int numberOfEntries) {
 		this.numberOfEntries = numberOfEntries;
+	}
+	
+	public String toString() {
+		String res = "Bucket id: "+id+"; has "+numberOfEntries+" entries \n";
+		try {readData();} catch(DBAppException e){}
+		for(BucketEntry e:entries)
+			res += e.toString()+"\n";
+		entries = null;
+		res += "\n";
+		return res;
 	}
 }

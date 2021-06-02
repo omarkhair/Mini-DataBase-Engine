@@ -1,8 +1,8 @@
 import java.io.Serializable;
-import java.util.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
+@SuppressWarnings("serial")
 public class Column implements Serializable {
     private String name;
     private String dataType;
@@ -58,7 +58,8 @@ public class Column implements Serializable {
     	return max;
     }
 
-    public Comparable parseType(String val) throws ParseException {
+    @SuppressWarnings("rawtypes")
+	public Comparable parseType(String val) throws ParseException {
     	if(dataType.equals("java.lang.Integer")) {
     		return Integer.parseInt(val);
     	}
@@ -82,4 +83,11 @@ public class Column implements Serializable {
     	return result;
     }
 
+    public boolean equals(Object o) {
+    	return ((Column)o).getName().equals(name);
+    }
+    
+    public boolean sameColumn(SQLTerm t) {
+    	return t.get_strColumnName().equals(name);
+    }
 }

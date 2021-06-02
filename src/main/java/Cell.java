@@ -35,6 +35,7 @@ public class Cell implements Serializable{
 		}
 		Bucket lastBucket = buckets.get(buckets.size()-1);
 		if(lastBucket.getEntries().size() == maximumNoEntries){
+			lastBucket.setEntries(null);
 			lastBucket = new Bucket(tableName,lastBucket_id++,index_id,id);
 			buckets.add(lastBucket);
 		}
@@ -61,5 +62,16 @@ public class Cell implements Serializable{
 				break;
 			}
 		}
+	}
+	public String toString() {
+		String res = "Cell id: "+id+"; has "+buckets.size()+" buckets \n";
+		for(Bucket b:buckets) {
+			res+= "--------------------------------------------\n";
+			res += b.toString()+"\n";
+		}
+		if(buckets.size()==0)
+			res+="---empty cell---\n\n";
+		res += "\n";
+		return res;
 	}
 }

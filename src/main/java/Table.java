@@ -88,19 +88,15 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public void insertRecord(Hashtable<String, Object> colNameValue) throws DBAppException {
-		Tuple t = createTuple(colNameValue);
-		insertRecordOverflow(t);
-//the commented method shifts all full pages to insert instead of creating extra pages
-//		insertRecordHelper(t);
-	}
-
-	public Tuple createTuple(Hashtable<String, Object> colNameValue) {
 		Vector<Object> data = new Vector<>();
 		for (Column c : columns) {
 			data.add(colNameValue.getOrDefault(c.getName(), null));
 		}
 		Tuple t = new Tuple(data);
-		return t;
+		insertRecordOverflow(t);
+
+//the commented method shifts all full pages to insert instead of creating extra pages
+//		insertRecordHelper(t);
 	}
 
 	public void insertRecordOverflow(Tuple t) throws DBAppException {
@@ -144,6 +140,7 @@ public class Table implements Serializable, TableObserver {
 			}
 		}
 	}
+
 
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
@@ -273,8 +270,7 @@ public class Table implements Serializable, TableObserver {
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
 				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-					throw new DBAppException(
-							"out of bounds value for column " + ent.getKey() + " value: " + val2.toString());
+					throw new DBAppException("out of bounds value for column " + ent.getKey()+" value: "+val2.toString());
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -448,47 +444,49 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public Vector<Column> getCols(String[] columnNames) throws DBAppException {
-		for (int i = 0; i < columnNames.length; i++)
-			for (int j = i + 1; j < columnNames.length; j++) {
-				if (columnNames[i].equals(columnNames[j]))
-					throw new DBAppException("There are 2 columns with name " + columnNames[i]);
+		for(int i=0;i<columnNames.length;i++)
+			for(int j=i+1;j<columnNames.length;j++){
+				if(columnNames[i].equals(columnNames[j]))
+					throw new DBAppException("There are 2 columns with name "+ columnNames[i]);
 			}
 		Vector<Column> cols = new Vector<>();
-		for (String col : columnNames) {
-			if (getColumn(col) == null)
-				throw new DBAppException("There is no column named " + col + " in table " + tableName);
+		for (String col: columnNames){
+			if(getColumn(col)==null)
+				throw new DBAppException("There is no column named "+ col +" in table "+tableName);
 			cols.add(getColumn(col));
 		}
 		return cols;
 	}
 
-	// this method fills the given grid index with all the entries found in the
-	// table
+	// this method fills the given grid index with all the entries found in the table
 	public void populateIndex(GridIndex index) throws DBAppException {
-		for (Page page : pages) {
+		for(Page page: pages){
 			page.readData();
 			Vector<Tuple> data = page.getData();
-			for (Tuple t : data) {
-				BucketEntry be = createBucketEntry(t, page.getId(), index);
+			for(Tuple t: data){
+				BucketEntry be = createBucketEntry(t,page.getId(),index);
 				index.insertEntry(be);
 			}
-
+			
 			// free the page data that we are done working with from memory
 			page.setData(null);
 		}
 	}
-
+	
 	public BucketEntry createBucketEntry(Tuple t, int pageId, GridIndex index) {
 		Vector<Object> entryData = new Vector<>();
-		for (Column col : index.getColumns()) {
+		for(Column col: index.getColumns()){
 			int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
 			entryData.add(t.getIthVal(idxInTuple));
 		}
-		BucketEntry be = new BucketEntry(entryData, pageId, t.getIthVal(0));
+		BucketEntry be = new BucketEntry(entryData, pageId , t.getIthVal(0));
 		return be;
 	}
+	
+	public void deleteUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
+		
+	}
 
-	@Override
 	public void notifyInsert(int pageId, Tuple t) throws DBAppException {
 		for (GridIndex index : indecies) {
 			BucketEntry be = createBucketEntry(t, pageId, index);
@@ -506,24 +504,96 @@ public class Table implements Serializable, TableObserver {
 
 	}
 
-	public void deleteUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
-		Vector<String> columNames = new Vector<String>();
-		for (Map.Entry<String, Object> val : colNameValue.entrySet()) {
-			columNames.add(val.getKey());
-		}
-		GridIndex target = null;
-		int count = -1;
-		for (GridIndex index : indecies) {
-			if (index.getnumOfMatchingCols(columNames) > count) {
-				target = index;
-				count = index.getnumOfMatchingCols(columNames);
+	public GridIndex getBestIndex(Vector<SQLTerm> selectTerms) {
+		int maxSoFar = 0;
+		GridIndex resIndex = null;
+		for(GridIndex g : indecies) {
+			int columns = getNoMatchingColumns(g,selectTerms);
+			if(columns>maxSoFar) {
+				maxSoFar = columns;
+				resIndex = g;
+			}
+			else if(columns == maxSoFar && resIndex != null) {
+				if(g.getColumns().size()<resIndex.getColumns().size()) {
+					resIndex = g;
+				}
 			}
 		}
-		if(count==) {
-			deleteRecords(colNameValue);
-			return ; 
-		}
-		
+		return resIndex;
 	}
 
+	private int getNoMatchingColumns(GridIndex g, Vector<SQLTerm> selectTerms) {
+		int res = 0;
+		for(SQLTerm t : selectTerms)
+			for(Column c : g.getColumns())
+				if(c.getName().equals(t.get_strColumnName()))
+					res++;
+		return res;
+	}
+
+	public HashSet<Integer> getAllPagesIds() {
+		HashSet<Integer> res = new HashSet<Integer>();
+		for(Page p : pages) {
+			res.add(p.getId());
+		}
+		return res;
+	}
+
+	public Iterator evaluateSelect(HashSet<Integer> pagesIds, SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
+		Vector<Tuple> res = new Vector<Tuple>();
+		for(Integer i : pagesIds) {
+			Page p = getPageWithId(i);
+			p.readData();
+			for(Tuple t : p.getData()) {
+				if(evaluateSelectOnTuple(t,sqlTerms,arrayOperators,0))
+					res.add(t);
+			}
+			p.setData(null);
+		}
+		return res.iterator();
+	}
+
+	private boolean evaluateSelectOnTuple(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators, int i) throws DBAppException {
+		if(i==arrayOperators.length) {
+			return isTupleInTerm(t,sqlTerms[i]);
+		}
+		else {
+			switch(arrayOperators[i]) {
+			case "AND" : return isTupleInTerm(t,sqlTerms[i]) && evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
+			case "OR"  : return isTupleInTerm(t,sqlTerms[i]) || evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
+			case "XOR" : return isTupleInTerm(t,sqlTerms[i]) ^  evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
+			default: throw new DBAppException("wrong passed sql operator");
+			}
+		}
+	}
+
+	private boolean isTupleInTerm(Tuple t, SQLTerm sqlTerm) throws DBAppException {
+		int index = 0;
+		for(int i = 0; i<columns.size();i++) {
+			if(columns.get(i).sameColumn(sqlTerm))
+				index = i;
+		}
+		@SuppressWarnings("rawtypes")
+		Comparable tupleValue = (Comparable) t.getData().get(index);
+		@SuppressWarnings("rawtypes")
+		Comparable termValue  = (Comparable) sqlTerm.get_objValue();
+		switch(sqlTerm.get_strOperator()) {
+		case ">": return (tupleValue.compareTo(termValue)>0);
+		case ">=": return (tupleValue.compareTo(termValue)>=0);
+		case "<": return (tupleValue.compareTo(termValue)<0);
+		case "<=": return (tupleValue.compareTo(termValue)<=0);
+		case "=": return (tupleValue.compareTo(termValue)==0);
+		case "!=": return (tupleValue.compareTo(termValue)!=0);
+		default: throw new DBAppException("wrong passed sql term");
+		}
+	}
+
+	private Page getPageWithId(Integer i) {
+		for(Page p : pages)
+			if(p.getId()==i)
+				return p;
+		return null;
+	}
+	
+	
 }
