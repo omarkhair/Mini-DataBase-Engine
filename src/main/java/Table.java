@@ -141,7 +141,6 @@ public class Table implements Serializable, TableObserver {
 		}
 	}
 
-
 	public void insertRecordHelper(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
 			Page page = new Page(tableName, clusteringKeyType, lastPageId++, this);
@@ -270,7 +269,8 @@ public class Table implements Serializable, TableObserver {
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				Date val2 = (Date) val;
 				if (val2.compareTo(((Date) c.getMax())) > 0 || val2.compareTo(((Date) c.getMin())) < 0) {
-					throw new DBAppException("out of bounds value for column " + ent.getKey()+" value: "+val2.toString());
+					throw new DBAppException(
+							"out of bounds value for column " + ent.getKey() + " value: " + val2.toString());
 				}
 			} else
 				throw new DBAppException("unsupported data type for column " + ent.getKey());
@@ -444,47 +444,65 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public Vector<Column> getCols(String[] columnNames) throws DBAppException {
-		for(int i=0;i<columnNames.length;i++)
-			for(int j=i+1;j<columnNames.length;j++){
-				if(columnNames[i].equals(columnNames[j]))
-					throw new DBAppException("There are 2 columns with name "+ columnNames[i]);
+		for (int i = 0; i < columnNames.length; i++)
+			for (int j = i + 1; j < columnNames.length; j++) {
+				if (columnNames[i].equals(columnNames[j]))
+					throw new DBAppException("There are 2 columns with name " + columnNames[i]);
 			}
 		Vector<Column> cols = new Vector<>();
-		for (String col: columnNames){
-			if(getColumn(col)==null)
-				throw new DBAppException("There is no column named "+ col +" in table "+tableName);
+		for (String col : columnNames) {
+			if (getColumn(col) == null)
+				throw new DBAppException("There is no column named " + col + " in table " + tableName);
 			cols.add(getColumn(col));
 		}
 		return cols;
 	}
 
-	// this method fills the given grid index with all the entries found in the table
+	// this method fills the given grid index with all the entries found in the
+	// table
 	public void populateIndex(GridIndex index) throws DBAppException {
-		for(Page page: pages){
+		for (Page page : pages) {
 			page.readData();
 			Vector<Tuple> data = page.getData();
-			for(Tuple t: data){
-				BucketEntry be = createBucketEntry(t,page.getId(),index);
+			for (Tuple t : data) {
+				BucketEntry be = createBucketEntry(t, page.getId(), index);
 				index.insertEntry(be);
 			}
-			
+
 			// free the page data that we are done working with from memory
 			page.setData(null);
 		}
 	}
-	
+
 	public BucketEntry createBucketEntry(Tuple t, int pageId, GridIndex index) {
 		Vector<Object> entryData = new Vector<>();
-		for(Column col: index.getColumns()){
+		for (Column col : index.getColumns()) {
 			int idxInTuple = Utilities.getIndexOf(col.getName(), columns);
 			entryData.add(t.getIthVal(idxInTuple));
 		}
-		BucketEntry be = new BucketEntry(entryData, pageId , t.getIthVal(0));
+		BucketEntry be = new BucketEntry(entryData, pageId, t.getIthVal(0));
 		return be;
 	}
-	
+
 	public void deleteUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
-		
+		SQLTerm[] sqlTerms = createSqlTerms(colNameValue);
+		Vector<SQLTerm> selectTerms = new Vector<SQLTerm>();
+		for (SQLTerm st : sqlTerms) {
+			selectTerms.add(st);
+		}
+		GridIndex g = getBestIndex(selectTerms);
+		if (g == null) {
+			deleteRecords(colNameValue);
+			return;
+		} else {
+			selectTerms = Utilities.getAndedTermsInIndex(g, (Vector<SQLTerm>) selectTerms.clone());
+			TreeSet<Integer> pagesId = g.getPagesIds(selectTerms);
+			for (Integer pageId : pagesId) {
+				Page target = this.getPageWithId(pageId);
+				target.deleteRecords(colNameValue, columns);
+			}
+		}
+
 	}
 
 	public void notifyInsert(int pageId, Tuple t) throws DBAppException {
@@ -507,14 +525,13 @@ public class Table implements Serializable, TableObserver {
 	public GridIndex getBestIndex(Vector<SQLTerm> selectTerms) {
 		int maxSoFar = 0;
 		GridIndex resIndex = null;
-		for(GridIndex g : indecies) {
-			int columns = getNoMatchingColumns(g,selectTerms);
-			if(columns>maxSoFar) {
+		for (GridIndex g : indecies) {
+			int columns = getNoMatchingColumns(g, selectTerms);
+			if (columns > maxSoFar) {
 				maxSoFar = columns;
 				resIndex = g;
-			}
-			else if(columns == maxSoFar && resIndex != null) {
-				if(g.getColumns().size()<resIndex.getColumns().size()) {
+			} else if (columns == maxSoFar && resIndex != null) {
+				if (g.getColumns().size() < resIndex.getColumns().size()) {
 					resIndex = g;
 				}
 			}
@@ -524,28 +541,29 @@ public class Table implements Serializable, TableObserver {
 
 	private int getNoMatchingColumns(GridIndex g, Vector<SQLTerm> selectTerms) {
 		int res = 0;
-		for(SQLTerm t : selectTerms)
-			for(Column c : g.getColumns())
-				if(c.getName().equals(t.get_strColumnName()))
+		for (SQLTerm t : selectTerms)
+			for (Column c : g.getColumns())
+				if (c.getName().equals(t.get_strColumnName()))
 					res++;
 		return res;
 	}
 
 	public HashSet<Integer> getAllPagesIds() {
 		HashSet<Integer> res = new HashSet<Integer>();
-		for(Page p : pages) {
+		for (Page p : pages) {
 			res.add(p.getId());
 		}
 		return res;
 	}
 
-	public Iterator evaluateSelect(HashSet<Integer> pagesIds, SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
+	public Iterator evaluateSelect(HashSet<Integer> pagesIds, SQLTerm[] sqlTerms, String[] arrayOperators)
+			throws DBAppException {
 		Vector<Tuple> res = new Vector<Tuple>();
-		for(Integer i : pagesIds) {
-			Page p = getPageWithId(i);
+		for (Integer i : pagesIds) {
+			Page p = pages.get(i);
 			p.readData();
-			for(Tuple t : p.getData()) {
-				if(evaluateSelectOnTuple(t,sqlTerms,arrayOperators,0))
+			for (Tuple t : p.getData()) {
+				if (evaluateSelectOnTuple(t, sqlTerms, arrayOperators))
 					res.add(t);
 			}
 			p.setData(null);
@@ -553,47 +571,118 @@ public class Table implements Serializable, TableObserver {
 		return res.iterator();
 	}
 
-	private boolean evaluateSelectOnTuple(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators, int i) throws DBAppException {
-		if(i==arrayOperators.length) {
-			return isTupleInTerm(t,sqlTerms[i]);
+	private boolean evaluateSelectOnTuple(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
+		boolean[] evals = new boolean[sqlTerms.length];
+		for (int i = 0; i < sqlTerms.length; i++)
+			evals[i] = isTupleInTerm(t, sqlTerms[i]);
+		return evaluateExpression(evals, arrayOperators);
+	}
+
+	public static boolean evaluateExpression(boolean[] val, String[] arrayOperators) {
+		ArrayList<Boolean> oldVal = new ArrayList<>();
+		ArrayList<String> oldOps = new ArrayList<>();
+		for (boolean x : val)
+			oldVal.add(x);
+		for (String s : arrayOperators)
+			oldOps.add(s);
+
+		ArrayList<Boolean> newVal = new ArrayList<>();
+		ArrayList<String> newOps = new ArrayList<>();
+		boolean prev = oldVal.get(0);
+		for (int i = 0; i < oldOps.size(); i++) {
+			if (oldOps.get(i).equals("AND")) {
+				prev = prev & oldVal.get(i + 1);
+			} else {
+				newVal.add(prev);
+				prev = oldVal.get(i + 1);
+				newOps.add(oldOps.get(i));
+			}
 		}
-		else {
-			switch(arrayOperators[i]) {
-			case "AND" : return isTupleInTerm(t,sqlTerms[i]) && evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
-			case "OR"  : return isTupleInTerm(t,sqlTerms[i]) || evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
-			case "XOR" : return isTupleInTerm(t,sqlTerms[i]) ^  evaluateSelectOnTuple(t, sqlTerms, arrayOperators, i+1);
-			default: throw new DBAppException("wrong passed sql operator");
+		newVal.add(prev);
+
+		oldVal = newVal;
+		oldOps = newOps;
+		newVal = new ArrayList<>();
+		newOps = new ArrayList<>();
+
+		prev = oldVal.get(0);
+		for (int i = 0; i < oldOps.size(); i++) {
+			if (oldOps.get(i).equals("OR")) {
+				prev = prev | oldVal.get(i + 1);
+			} else {
+				newVal.add(prev);
+				prev = oldVal.get(i + 1);
+				newOps.add(oldOps.get(i));
+			}
+		}
+		newVal.add(prev);
+
+		oldVal = newVal;
+		oldOps = newOps;
+		newVal = new ArrayList<>();
+		newOps = new ArrayList<>();
+
+		prev = oldVal.get(0);
+		for (int i = 0; i < oldOps.size(); i++) {
+			if (oldOps.get(i).equals("XOR")) {
+				prev = prev ^ oldVal.get(i + 1);
+			} else {
+				newVal.add(prev);
+				prev = oldVal.get(i + 1);
+				newOps.add(oldOps.get(i));
+			}
+		}
+
+		return prev;
+	}
+
+	private boolean evaluateSelectOnTupleNoPrescedence(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators, int i)
+			throws DBAppException {
+		if (i == arrayOperators.length) {
+			return isTupleInTerm(t, sqlTerms[i]);
+		} else {
+			switch (arrayOperators[i]) {
+			case "AND":
+				return isTupleInTerm(t, sqlTerms[i])
+						&& evaluateSelectOnTupleNoPrescedence(t, sqlTerms, arrayOperators, i + 1);
+			case "OR":
+				return isTupleInTerm(t, sqlTerms[i])
+						|| evaluateSelectOnTupleNoPrescedence(t, sqlTerms, arrayOperators, i + 1);
+			case "XOR":
+				return isTupleInTerm(t, sqlTerms[i])
+						^ evaluateSelectOnTupleNoPrescedence(t, sqlTerms, arrayOperators, i + 1);
+			default:
+				throw new DBAppException("wrong passed sql operator");
 			}
 		}
 	}
 
 	private boolean isTupleInTerm(Tuple t, SQLTerm sqlTerm) throws DBAppException {
 		int index = 0;
-		for(int i = 0; i<columns.size();i++) {
-			if(columns.get(i).sameColumn(sqlTerm))
+		for (int i = 0; i < columns.size(); i++) {
+			if (columns.get(i).sameColumn(sqlTerm))
 				index = i;
 		}
-		@SuppressWarnings("rawtypes")
 		Comparable tupleValue = (Comparable) t.getData().get(index);
-		@SuppressWarnings("rawtypes")
-		Comparable termValue  = (Comparable) sqlTerm.get_objValue();
-		switch(sqlTerm.get_strOperator()) {
-		case ">": return (tupleValue.compareTo(termValue)>0);
-		case ">=": return (tupleValue.compareTo(termValue)>=0);
-		case "<": return (tupleValue.compareTo(termValue)<0);
-		case "<=": return (tupleValue.compareTo(termValue)<=0);
-		case "=": return (tupleValue.compareTo(termValue)==0);
-		case "!=": return (tupleValue.compareTo(termValue)!=0);
-		default: throw new DBAppException("wrong passed sql term");
+		return sqlTerm.checkSameValue(tupleValue);
+	}
+
+	public SQLTerm[] createSqlTerms(Hashtable<String, Object> colNameValue) {
+		SQLTerm sqlTerms[] = new SQLTerm[colNameValue.size()];
+		int i = 0;
+		for (Map.Entry<String, Object> val : colNameValue.entrySet()) {
+			SQLTerm st = new SQLTerm(this.tableName, val.getKey(), "=", val.getValue());
+			sqlTerms[i] = st;
+			i++;
 		}
+		return sqlTerms;
 	}
 
 	private Page getPageWithId(Integer i) {
-		for(Page p : pages)
-			if(p.getId()==i)
+		for (Page p : pages)
+			if (p.getId() == i)
 				return p;
 		return null;
 	}
-	
-	
+
 }

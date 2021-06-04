@@ -2,6 +2,7 @@ import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Vector;
 
 public class Utilities {
@@ -87,6 +88,29 @@ public class Utilities {
 				res.add(k);
 			}
 		return res;
+	}
+
+	public static int[] fromVectortoArr(Vector<Integer> dimensions) {
+		int[] dims = new int[dimensions.size()];
+		for (int i = 0; i < dims.length; i++) {
+			dims[i] = dimensions.remove(i);
+		}
+		return dims;
+	}
+
+	public static Vector<SQLTerm> getAndedTermsInIndex(GridIndex g, Vector<SQLTerm> andedTerms) {
+		Vector<SQLTerm> res = new Vector<SQLTerm>();
+		for (Column c : g.getColumns())
+			for (SQLTerm t : andedTerms)
+				if (c.sameColumn(t))
+					res.add(t);
+		return res;
+	}
+
+	public static long dateObjectToDays(Date date) {
+		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd");
+		long days = Utilities.dateToDays(s.format(date));
+		return days;
 	}
 
 	public static void main(String[] args) {

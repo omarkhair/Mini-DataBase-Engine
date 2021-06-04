@@ -47,5 +47,19 @@ public class SQLTerm {
 	public boolean sameColumn(Column c) {
     	return c.getName().equals(_strColumnName);
     }
+	public boolean checkSameValue(Object value) throws DBAppException {
+		Comparable comparedValue = (Comparable)value; 
+		Comparable termValue  = (Comparable) this._objValue;
+		switch(this.get_strOperator()) {
+		case ">":  return (comparedValue.compareTo(termValue)>0);
+		case ">=": return (comparedValue.compareTo(termValue)>=0); 
+		case "<":  return (comparedValue.compareTo(termValue)<0); 
+		case "<=": return (comparedValue.compareTo(termValue)<=0);  
+		case "=":  return (comparedValue.compareTo(termValue)==0); 
+		case "!=": return (comparedValue.compareTo(termValue)!=0); 	
+		default: throw new DBAppException("wrong passed sql term");
+
+	}
+	}
 
 }

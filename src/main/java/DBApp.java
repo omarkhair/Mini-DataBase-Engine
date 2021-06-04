@@ -2,10 +2,12 @@ import java.io.*;
 import java.sql.Date;
 import java.util.*;
 
+import javax.rmi.CORBA.Util;
+
 public class DBApp implements DBAppInterface {
 	public int MaximumRowsCountinPage;
 	public int MaximumKeysCountinIndexBucket;
-	
+
 	public DBApp() {
 		init();
 	}
@@ -55,19 +57,18 @@ public class DBApp implements DBAppInterface {
 		Table table = (Table) Serializer.deserilize(path);
 		Vector<Column> cols = table.getCols(columnNames);
 		// edit metadata file
-		for(Column col: cols)
+		for (Column col : cols)
 			col.setIndexed(true);
 		table.create_metadata();
-		
+
 		GridIndex index = new GridIndex(tableName, table.getLastIndexId(), MaximumKeysCountinIndexBucket, cols);
 		table.getIndecies().add(index);
 		table.setLastIndexId(table.getLastIndexId() + 1);
 		// insert all rows of the table in the newly created index
 		table.populateIndex(index);
 		Serializer.serialize(path, table);
-		//System.out.println(index);
+		// System.out.println(index);
 	}
-
 
 	@Override
 	public void insertIntoTable(String tableName, Hashtable<String, Object> colNameValue) throws DBAppException {
@@ -76,19 +77,20 @@ public class DBApp implements DBAppInterface {
 		table.verifyInsertion(colNameValue);
 		// verify the types of the inserted values
 		table.insertRecord(colNameValue);
-		//table.updatePagesRecord();
+		// table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
 	@Override
-	public void updateTable(String tableName, String clusteringKeyValue, Hashtable<String, Object> columnNameValue) throws DBAppException {
-    	String path = "src/main/resources/data/"+tableName+"/"+tableName+".ser";
-        Table table = (Table) Serializer.deserilize(path);
-        table.verifyUpdate(clusteringKeyValue,columnNameValue);
-        table.updateRecord(clusteringKeyValue,columnNameValue);
-        //table.updatePagesRecord();
-        Serializer.serialize(path, table);
-    }
+	public void updateTable(String tableName, String clusteringKeyValue, Hashtable<String, Object> columnNameValue)
+			throws DBAppException {
+		String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
+		Table table = (Table) Serializer.deserilize(path);
+		table.verifyUpdate(clusteringKeyValue, columnNameValue);
+		table.updateRecord(clusteringKeyValue, columnNameValue);
+		// table.updatePagesRecord();
+		Serializer.serialize(path, table);
+	}
 
 	@Override
 	public void deleteFromTable(String tableName, Hashtable<String, Object> columnNameValue) throws DBAppException {
@@ -97,29 +99,28 @@ public class DBApp implements DBAppInterface {
 		// false return means there is a condition beyond min and max of some column
 		if (!table.verifyDeletion(columnNameValue))
 			return;
-		table.deleteRecords(columnNameValue);
-		//table.updatePagesRecord();
+		table.deleteUsingIndex(columnNameValue);
+		// table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
 
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Iterator selectFromTable(SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
-		Table table = (Table) Serializer.deserilize("src/main/resources/data/"+sqlTerms[0].get_strTableName()+"/"+sqlTerms[0].get_strTableName()+".ser");
-		Vector<Column> selectColumns = validateSelect(sqlTerms,arrayOperators,table);
+		Table table = (Table) Serializer.deserilize("src/main/resources/data/" + sqlTerms[0].get_strTableName() + "/"
+				+ sqlTerms[0].get_strTableName() + ".ser");
+		Vector<Column> selectColumns = validateSelect(sqlTerms, arrayOperators, table);
 		Vector<SQLTerm> andedTerms = new Vector<SQLTerm>();
 		andedTerms.add(sqlTerms[0]);
 		int i = 1;
 		HashSet<Integer> pagesIds = new HashSet<Integer>();
-		for(String s : arrayOperators) {
-			if(s.equals("AND")) {
+		for (String s : arrayOperators) {
+			if (s.equals("AND")) {
 				andedTerms.add(sqlTerms[i]);
-			}
-			else {
+			} else {
 				try {
 					pagesIds.addAll(computeAND(andedTerms, table));
-				}
-				catch(NoIndexFoundException e) {
+				} catch (NoIndexFoundException e) {
 					pagesIds = table.getAllPagesIds();
 					break;
 				}
@@ -127,59 +128,56 @@ public class DBApp implements DBAppInterface {
 			}
 			i++;
 		}
-		
-		return table.evaluateSelect(pagesIds,sqlTerms,arrayOperators);
+
+		return table.evaluateSelect(pagesIds, sqlTerms, arrayOperators);
 
 	}
 
-	private HashSet<Integer> computeAND(Vector<SQLTerm> andedTerms, Table table) throws NoIndexFoundException{
+	private TreeSet<Integer> computeAND(Vector<SQLTerm> andedTerms, Table table)
+			throws NoIndexFoundException, DBAppException {
 		GridIndex g = table.getBestIndex(andedTerms);
-		if(g==null) throw new NoIndexFoundException();
-		Vector<SQLTerm> andedTermsInIndex = getAndedTermsInIndex(g,andedTerms);
+		if (g == null)
+			throw new NoIndexFoundException();
+		Vector<SQLTerm> andedTermsInIndex = Utilities.getAndedTermsInIndex(g, andedTerms);
 		return g.getPagesIds(andedTermsInIndex);
 	}
 
-	private Vector<SQLTerm> getAndedTermsInIndex(GridIndex g, Vector<SQLTerm> andedTerms) {
-		Vector<SQLTerm> res = new Vector<SQLTerm>();
-		for(Column c : g.getColumns())
-			for(SQLTerm t : andedTerms)
-				if(c.sameColumn(t))
-					res.add(t);
-		return res;
-	}
 
-	private Vector<Column> validateSelect(SQLTerm[] sqlTerms, String[] arrayOperators, Table table) throws DBAppException {
+	private Vector<Column> validateSelect(SQLTerm[] sqlTerms, String[] arrayOperators, Table table)
+			throws DBAppException {
 		Vector<Column> res = new Vector<Column>();
-		for(SQLTerm t: sqlTerms) {
+		for (SQLTerm t : sqlTerms) {
 			Column flag = null;
-			if(!t.get_strTableName().equals(table.getTableName()))
-				throw new DBAppException("Passed SQL Terms select from different tables "+t.get_strTableName()+" and "+table.getTableName());
-			for(Column c : table.getColumns()) {
-				if(c.getName().equals(t.get_strColumnName()))
+			if (!t.get_strTableName().equals(table.getTableName()))
+				throw new DBAppException("Passed SQL Terms select from different tables " + t.get_strTableName()
+						+ " and " + table.getTableName());
+			for (Column c : table.getColumns()) {
+				if (c.getName().equals(t.get_strColumnName()))
 					flag = c;
 			}
-			if(flag==null)
-				throw new DBAppException("Column "+t.get_strColumnName()+" does not exist in table "+table.getTableName());
+			if (flag == null)
+				throw new DBAppException(
+						"Column " + t.get_strColumnName() + " does not exist in table " + table.getTableName());
 			else
 				res.add(flag);
-			if(t.get_strOperator()!=">"&&t.get_strOperator()!=">="&&t.get_strOperator()!="<"&&
-					t.get_strOperator()!="<="&&t.get_strOperator()!="!="&&t.get_strOperator()!="=")
-				throw new DBAppException("undefined operator "+t.get_strOperator());
-			//Utilities.parseType(flag.getDataType(), dataType);
-			if(flag.getDataType().equals("java.lang.Integer")&&!(t.get_objValue() instanceof Integer))
+			if (t.get_strOperator() != ">" && t.get_strOperator() != ">=" && t.get_strOperator() != "<"
+					&& t.get_strOperator() != "<=" && t.get_strOperator() != "!=" && t.get_strOperator() != "=")
+				throw new DBAppException("undefined operator " + t.get_strOperator());
+			// Utilities.parseType(flag.getDataType(), dataType);
+			if (flag.getDataType().equals("java.lang.Integer") && !(t.get_objValue() instanceof Integer))
 				throw new DBAppException("Select term data type mismatch");
-			if(flag.getDataType().equals("java.lang.Double")&&!(t.get_objValue() instanceof Double))
+			if (flag.getDataType().equals("java.lang.Double") && !(t.get_objValue() instanceof Double))
 				throw new DBAppException("Select term data type mismatch");
-			if(flag.getDataType().equals("java.lang.String")&&!(t.get_objValue() instanceof String))
+			if (flag.getDataType().equals("java.lang.String") && !(t.get_objValue() instanceof String))
 				throw new DBAppException("Select term data type mismatch");
-			if(flag.getDataType().equals("java.util.Date")&&!(t.get_objValue() instanceof Date))
+			if (flag.getDataType().equals("java.util.Date") && !(t.get_objValue() instanceof Date))
 				throw new DBAppException("Select term data type mismatch");
 		}
-		for(String o:arrayOperators) {
-			if(!o.equals("AND")&&!o.equals("OR")&&!o.equals("XOR"))
-				throw new DBAppException("undefined operator "+o);
+		for (String o : arrayOperators) {
+			if (!o.equals("AND") && !o.equals("OR") && !o.equals("XOR"))
+				throw new DBAppException("undefined operator " + o);
 		}
-		if(arrayOperators.length != sqlTerms.length-1)
+		if (arrayOperators.length != sqlTerms.length - 1)
 			throw new DBAppException("Number of operators has to match the number of the terms");
 		return res;
 	}
@@ -209,7 +207,7 @@ public class DBApp implements DBAppInterface {
 	}
 
 	public static void main(String[] args) throws DBAppException, InterruptedException {
-	DBApp dbApp = new DBApp();
+		DBApp dbApp = new DBApp();
 //        Hashtable htblColNameType = new Hashtable( );
 //        htblColNameType.put("id", "java.lang.Integer");
 //        htblColNameType.put("name", "java.lang.String");
@@ -235,14 +233,14 @@ public class DBApp implements DBAppInterface {
 //		record1.put("gpa", 2.0);
 //		dbApp.insertIntoTable("test", record1);
 //		}
-		
+
 		Table table = (Table) Serializer.deserilize("src/main/resources/data/test/test.ser");
-		//System.out.println(table.getIndecies().size());
-        //String[] colnames = {"name","id"};
-        //dbApp.createIndex("test", colnames);
-        
-        System.out.println(table.getIndecies().get(1));
-        //System.out.println(table.getIndecies().size());
+		// System.out.println(table.getIndecies().size());
+		// String[] colnames = {"name","id"};
+		// dbApp.createIndex("test", colnames);
+
+		System.out.println(table.getIndecies().get(1));
+		// System.out.println(table.getIndecies().size());
 //		for (int i = 0; i < 30; i+=3) {
 //			Hashtable record1 = new Hashtable();
 //			record1.put("id", i);

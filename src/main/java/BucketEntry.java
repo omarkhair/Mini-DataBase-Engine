@@ -38,15 +38,28 @@ public class BucketEntry implements Serializable {
 		this.clusteringKeyValue = clusteringKeyValue;
 	}
 
-	public String toString(){
-		return data.toString() + " in page with ID " + pageId + " clustering key is "+clusteringKeyValue;
+	public String toString() {
+		return data.toString() + " in page with ID " + pageId + " clustering key is " + clusteringKeyValue;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if(!(o instanceof BucketEntry))
+		if (!(o instanceof BucketEntry))
 			return false;
-		return this.clusteringKeyValue.equals(((BucketEntry)o).clusteringKeyValue);
+		return this.clusteringKeyValue.equals(((BucketEntry) o).clusteringKeyValue);
 	}
+
+	public boolean checkMatching(Vector<SQLTerm> sqlTerms,Vector<String> columnNames) throws DBAppException {
+		boolean flag = true ; 
+		loop:for(SQLTerm st : sqlTerms) {
+			if(!flag) {
+				break loop ; 
+			}
+			int idxOfCol = columnNames.indexOf(st.get_strColumnName()); 
+			Comparable colDataInBucketEntry = (Comparable) this.data.get(idxOfCol);
+			flag = st.checkSameValue(colDataInBucketEntry);
+		}
+		return flag ; 
 	
+}
 }

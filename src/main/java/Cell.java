@@ -63,6 +63,20 @@ public class Cell implements Serializable{
 			}
 		}
 	}
+	public Vector<Integer> getPagesOfCell(Vector<SQLTerm> sqlTerms,Vector<String> columnNames) throws DBAppException {
+		Vector<Integer>pages = new Vector<Integer>(); 
+		for(Bucket b :buckets ) {
+			b.readData();
+			Vector<BucketEntry> bucketEntries = b.getEntries(); 
+			for(BucketEntry be : bucketEntries) {
+				if(be.checkMatching(sqlTerms,columnNames)) {
+					pages.add(be.getPageId());
+				}
+			}
+			
+		}		
+		return pages;
+	}
 	public String toString() {
 		String res = "Cell id: "+id+"; has "+buckets.size()+" buckets \n";
 		for(Bucket b:buckets) {

@@ -2,8 +2,10 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Vector;
 
 @SuppressWarnings("serial")
@@ -141,7 +143,7 @@ public class GridIndex implements Serializable {
 				key = Utilities.dateToDays(s.format((Date) key));
 			}
 			Object[] limits = range[i];
-			if(key.equals(limits[10])) {
+			if (key.equals(limits[10])) {
 				cellIdx[i] = 9;
 			}
 			for (int j = 1; j < 11; j++) {
@@ -153,60 +155,121 @@ public class GridIndex implements Serializable {
 		}
 		return cellIdx;
 	}
+
 	public void insertEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.insertEntry(be);
 	}
+
 	public void deleteEntry(BucketEntry be) throws DBAppException {
 		int[] cellIdx = getIdxOfEntry(be);
 		Cell targetCell = access(cellIdx);
 		targetCell.deleteEntry(be);
 	}
-	
-	private boolean increment(int[] tmp,int i) {
-		if(i==tmp.length+1)
+
+	private boolean increment(int[] tmp, int i) {
+		if (i == tmp.length + 1)
 			return false;
-		tmp[tmp.length-i]++;
-		if(tmp[tmp.length-i]==10) {
-			tmp[tmp.length-i]=0;
-			return increment(tmp,i+1);
+		tmp[tmp.length - i]++;
+		if (tmp[tmp.length - i] == 10) {
+			tmp[tmp.length - i] = 0;
+			return increment(tmp, i + 1);
 		}
 		return true;
 	}
-	
+
 	private String getRanges(int[] tmp) {
 		String res = "";
-		for(int i = 0; i< dim; i++) {
-			res += columns.get(i).getName()+" has range of: ";
-			res += range[i][tmp[i]]+"->"+range[i][tmp[i]+1]+"\n";
+		for (int i = 0; i < dim; i++) {
+			res += columns.get(i).getName() + " has range of: ";
+			res += range[i][tmp[i]] + "->" + range[i][tmp[i] + 1] + "\n";
 		}
-		return res+"\n";
+		return res + "\n";
 	}
-	
-	public String toString(){
-		String res = "This is Grid Index with id "+ id +" on table "+tableName+"\n";
+
+	public String toString() {
+		String res = "This is Grid Index with id " + id + " on table " + tableName + "\n";
 		int[] tmp = new int[dim];
 		do {
-			res+= "--------------------------------------------------------------------------------------\n";
-			res+= "Cell ranges are: \n";
-			res+= getRanges(tmp);
-			res+=access(tmp).toString();
-		} while(increment(tmp,1));
+			res += "--------------------------------------------------------------------------------------\n";
+			res += "Cell ranges are: \n";
+			res += getRanges(tmp);
+			res += access(tmp).toString();
+		} while (increment(tmp, 1));
 		return res;
 	}
 
-	public HashSet<Integer> getPagesIds(Vector<SQLTerm> sqlTerms) {
-		// TODO Auto-generated method stub
+	public TreeSet<Integer> getPagesIds(Vector<SQLTerm> sqlTerms) throws DBAppException {
+		Vector<String> columnNames = new Vector<String>();
+		for (Column c : columns) {
+			columnNames.add(c.getName());
+		}
 		Vector<Vector<Integer>> cellIndecies = getCellIndecies(0, sqlTerms);
-		return null;
+		TreeSet<Integer> pages = new TreeSet<Integer>();
+		for (Vector<Integer> dimensions : cellIndecies) {
+			int[] dims = Utilities.fromVectortoArr(dimensions);
+			Cell target = access(dims);
+			pages.addAll(target.getPagesOfCell(sqlTerms, columnNames));
+		}
+
+		return pages;
 	}
 
 	private Vector<Vector<Integer>> getCellIndecies(int i, Vector<SQLTerm> sqlTerms) {
 		Vector<Vector<Integer>> res = new Vector<>();
-		//if(i == )
-		
-		return null;
+		if (i == 0) {
+			res.add(new Vector<>());
+			return res;
+		}
+		Vector<Vector<Integer>> prev = getCellIndecies(i - 1, sqlTerms);
+		Vector<Integer> validCellsIdx = getValidCells(i - 1, sqlTerms);
+		for (Vector<Integer> prevIdx : prev) {
+			for (int cellIdx : validCellsIdx) {
+				Vector<Integer> newIdx = (Vector<Integer>) prevIdx.clone();
+				newIdx.add(cellIdx);
+				res.add(newIdx);
+			}
+		}
+		return res;
+	}
+
+	private Vector<Integer> getValidCells(int i, Vector<SQLTerm> sqlTerms) {
+		Vector<Integer> res = new Vector<>();
+		for (int cell = 0; cell < 9; cell++) {
+			if (cellSatisfiesSQLTerms(i, cell, sqlTerms))
+				res.add(cell);
+		}
+		return res;
+	}
+
+	private boolean cellSatisfiesSQLTerms(int colIdx, int cellIdx, Vector<SQLTerm> sqlTerms) {
+		Object l = range[colIdx][cellIdx];
+		Object r = range[colIdx][cellIdx + 1];
+		for (SQLTerm term : sqlTerms) {
+			if (term.get_strColumnName().equals(columns.get(colIdx).getName())) {
+				Comparable val = (Comparable) term.get_objValue();
+				if (columns.get(colIdx).getDataType().equals("java.util.Date"))
+					val = Utilities.dateObjectToDays((Date) val);
+				boolean matches = true;
+				if (term.get_strOperator().equals("=")) {
+					if (cellIdx == 9)
+						matches = val.compareTo(l) >= 0 && val.compareTo(r) <= 0;
+					else
+						matches = val.compareTo(l) >= 0 && val.compareTo(r) < 0;
+				} else if (term.get_strOperator().equals(">") || term.get_strOperator().equals(">=")) {
+					if (cellIdx == 9)
+						matches = val.compareTo(r) <= 0;
+					else
+						matches = val.compareTo(r) < 0;
+				} else if (term.get_strOperator().equals("<") || term.get_strOperator().equals("<=")) {
+					matches = val.compareTo(l) >= 0;
+				}
+				if (!matches)
+					return false;
+			}
+		}
+		return true;
 	}
 
 }
