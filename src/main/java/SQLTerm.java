@@ -1,9 +1,13 @@
 
 public class SQLTerm {
-    private String _strTableName;
-    private String _strColumnName;
-    private String _strOperator;
-    private Object _objValue;
+    String _strTableName;
+    String _strColumnName;
+    String _strOperator;
+    Object _objValue;
+    
+    public SQLTerm() {
+    	
+    }
 
     public SQLTerm(String _strTableName, String _strColumnName, String _strOperator, Object _objValue){
     	this._objValue = _objValue;

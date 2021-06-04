@@ -1,7 +1,9 @@
 import java.io.File;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -123,8 +125,10 @@ public class GridIndex implements Serializable {
 
 	@SuppressWarnings({ "unused" })
 	public Cell access(int[] indecies) {
-		if (indecies.length != dim)
+		if (indecies.length != dim) {
+			
 			return null;
+		}
 		Object res = arr;
 		for (int i : indecies) {
 			res = ((Object[]) res)[i];
@@ -205,7 +209,7 @@ public class GridIndex implements Serializable {
 		for (Column c : columns) {
 			columnNames.add(c.getName());
 		}
-		Vector<Vector<Integer>> cellIndecies = getCellIndecies(0, sqlTerms);
+		Vector<Vector<Integer>> cellIndecies = getCellIndecies(dim, sqlTerms);
 		TreeSet<Integer> pages = new TreeSet<Integer>();
 		for (Vector<Integer> dimensions : cellIndecies) {
 			int[] dims = Utilities.fromVectortoArr(dimensions);

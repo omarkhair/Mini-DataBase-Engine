@@ -93,7 +93,7 @@ public class Utilities {
 	public static int[] fromVectortoArr(Vector<Integer> dimensions) {
 		int[] dims = new int[dimensions.size()];
 		for (int i = 0; i < dims.length; i++) {
-			dims[i] = dimensions.remove(i);
+			dims[i] = dimensions.get(i);
 		}
 		return dims;
 	}

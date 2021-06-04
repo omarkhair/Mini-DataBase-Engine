@@ -2,8 +2,6 @@ import java.io.*;
 import java.sql.Date;
 import java.util.*;
 
-import javax.rmi.CORBA.Util;
-
 public class DBApp implements DBAppInterface {
 	public int MaximumRowsCountinPage;
 	public int MaximumKeysCountinIndexBucket;
