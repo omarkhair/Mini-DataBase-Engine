@@ -1,9 +1,16 @@
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.Vector;
 
 public class MainParser {
+
+	public Iterator parseSQL(String s) throws DBAppException {
+		return parseSQL(new StringBuffer(s));
+	}
 
 	@SuppressWarnings("rawtypes")
 	public Iterator parseSQL(StringBuffer strbufSQL) throws DBAppException {
@@ -50,13 +57,18 @@ public class MainParser {
 		Table table = (Table) Serializer.deserilize(path);
 		Vector<String> operators = new Vector<String>();
 		Vector<SQLTerm> terms = new Vector<SQLTerm>();
-		if (!sa.nextWord().equals("where"))
+		if (!sa.hasMoreWords() || !sa.nextWord().equals("where"))
 			throw new DBAppException("you have to add WHERE to specify the selection terms");
 		while (sa.hasMoreWords()) {
 			String columnName = sa.nextWord();
 			String operator = sa.nextWord();
 			String value = sa.nextWord();
 			String type = table.getColumn(columnName).getDataType();
+			if (type.equals("java.lang.String") || type.equals("java.util.Date"))
+				if (value.charAt(0) != '\'' || value.charAt(value.length() - 1) != '\'')
+					throw new DBAppException("put varchar and date in single quotes");
+				else
+					value = value.substring(1, value.length() - 1);
 			Object val = Utilities.parseType(value, type);
 			SQLTerm t = new SQLTerm(tableName, columnName, operator, val);
 			terms.add(t);
@@ -66,10 +78,12 @@ public class MainParser {
 		DBApp db = new DBApp();
 		String[] arrayOperators = new String[operators.size()];
 		for (int i = 0; i < arrayOperators.length; i++)
-			arrayOperators[i] = operators.get(i);
+			arrayOperators[i] = operators.get(i).toUpperCase();
 		SQLTerm[] sqlTerms = new SQLTerm[terms.size()];
 		for (int i = 0; i < sqlTerms.length; i++)
 			sqlTerms[i] = terms.get(i);
+//		System.out.println(Arrays.toString(sqlTerms));
+//		System.out.println(Arrays.toString(arrayOperators));
 		return db.selectFromTable(sqlTerms, arrayOperators);
 	}
 
@@ -82,15 +96,23 @@ public class MainParser {
 		Hashtable<String, Object> columnNameValue = new Hashtable<String, Object>();
 		if (sa.hasMoreWords() && !sa.readNextWord().equals("where"))
 			throw new DBAppException("you have to add WHERE to specify the ANDED Deletion conitions");
-		else if (sa.hasMoreWords() && sa.readNextWord().equals("where")) {
+		else if (sa.hasMoreWords() && sa.nextWord().equals("where")) {
 			while (sa.hasMoreWords()) {
 				String columnName = sa.nextWord();
-				if (!sa.hasMoreWords() || !sa.nextWord().equals("="))
-					throw new DBAppException("expected = operator in deletion condiitons");
-				String val = sa.nextWord();
+				if (!sa.hasMoreWords() || !sa.nextWord().equals("=")) {
+					// System.out.println(sa.readNextWord());
+					throw new DBAppException("expected = operator in deletion conditions");
+				}
+				String value = sa.nextWord();
 				Column c = table.getColumn(columnName);
-				Object value = Utilities.parseType(val, c.getDataType());
-				columnNameValue.put(columnName, value);
+				String type = c.getDataType();
+				if (type.equals("java.lang.String") || type.equals("java.util.Date"))
+					if (value.charAt(0) != '\'' || value.charAt(value.length() - 1) != '\'')
+						throw new DBAppException("put varchar and date in single quotes");
+					else
+						value = value.substring(1, value.length() - 1);
+				Object val = Utilities.parseType(value, type);
+				columnNameValue.put(columnName, val);
 				if (sa.hasMoreWords() && !sa.nextWord().equals("and"))
 					throw new DBAppException("expected AND operator in deletion condiitons");
 			}
@@ -111,10 +133,16 @@ public class MainParser {
 			String columnName = sa.nextWord();
 			if (!sa.nextWord().equals("="))
 				throw new DBAppException("expected = after column name in updated columns");
-			String val = sa.nextWord();
+			String value = sa.nextWord();
 			Column c = table.getColumn(columnName);
-			Object value = Utilities.parseType(val, c.getDataType());
-			columnNameValue.put(columnName, value);
+			String type = c.getDataType();
+			if (type.equals("java.lang.String") || type.equals("java.util.Date"))
+				if (value.charAt(0) != '\'' || value.charAt(value.length() - 1) != '\'')
+					throw new DBAppException("put varchar and date in single quotes");
+				else
+					value = value.substring(1, value.length() - 1);
+			Object val = Utilities.parseType(value, type);
+			columnNameValue.put(columnName, val);
 			if (sa.readNextWord().equals("where"))
 				break;
 			if (!sa.nextWord().equals(","))
@@ -144,17 +172,20 @@ public class MainParser {
 			if (sa.nextWord().equals("values") && sa.nextWord().equals("(")) {
 				for (int i = 0; i < columns.size(); i++) {
 					String type = columns.get(i).getDataType();
-					String val = sa.nextWord();
-					if (type.equals("java.lang.String")) {
-						if (val.charAt(0) != '\'' || val.charAt(val.length() - 1) != '\'')
-							throw new DBAppException("put the string in single quotes");
-						val = val.substring(1, val.length() - 1);
-					}
+					String value = sa.nextWord();
+					if (type.equals("java.lang.String") || type.equals("java.util.Date"))
+						if (value.charAt(0) != '\'' || value.charAt(value.length() - 1) != '\'')
+							throw new DBAppException("put varchar and date in single quotes");
+						else
+							value = value.substring(1, value.length() - 1);
 
-					Object value = Utilities.parseType(val, type);
-					colNameValue.put(columns.get(i).getName(), value);
+					Object val = Utilities.parseType(value, type);
+					colNameValue.put(columns.get(i).getName(), val);
+					if (sa.readNextWord().equals(")"))
+						break;
 					if (!sa.nextWord().equals(","))
-						throw new DBAppException("separate columns with commas");
+						throw new DBAppException(
+								"separate columns with commas && make sure to insert values for all columns");
 				}
 				if (!sa.nextWord().equals(")"))
 					throw new DBAppException("end the parameters with )");
@@ -186,7 +217,9 @@ public class MainParser {
 				throw new DBAppException("separate indexed columns with commas");
 		}
 		sa.nextWord();
-		String[] columnNames = (String[]) columns.toArray();
+		String[] columnNames = new String[columns.size()];
+		for (int i = 0; i < columnNames.length; i++)
+			columnNames[i] = columns.get(i);
 		DBApp db = new DBApp();
 		db.createIndex(tableName, columnNames);
 
@@ -218,28 +251,44 @@ public class MainParser {
 				continue;
 			}
 			String colType = sa.nextWord();
-			String colMin = "";
-			String colMax = "";
+			// System.out.println(sa.readNextWord());
+			if (!sa.nextWord().equals("check") || !sa.nextWord().equals("(") || !sa.nextWord().equals(colName)
+					|| !sa.nextWord().equals("between")) {
+				throw new DBAppException(
+						"Add check constraint similar to CHECK(COLUMN_NAME BETWEEN MIN_VALUE AND MAX_VALUE) to specify each column min and max values");
+			}
+			String colMin = sa.nextWord();
+			if (colType.equals("varchar") || colType.equals("date"))
+				if (colMin.charAt(0) != '\'' || colMin.charAt(colMin.length() - 1) != '\'')
+					throw new DBAppException("put varchar and date in single quotes for min value");
+				else
+					colMin = colMin.substring(1, colMin.length() - 1);
+			if (!sa.nextWord().equals("and")) {
+				throw new DBAppException(
+						"Add check constraint similar to CHECK(COLUMN_NAME BETWEEN MIN_VALUE AND MAX_VALUE) to specify each column min and max values");
+			}
+			String colMax = sa.nextWord();
+			if (colType.equals("varchar") || colType.equals("date"))
+				if (colMax.charAt(0) != '\'' || colMax.charAt(colMax.length() - 1) != '\'')
+					throw new DBAppException("put varchar and date in single quotes for max value");
+				else
+					colMax = colMax.substring(1, colMax.length() - 1);
+			if (!sa.nextWord().equals(")")) {
+				throw new DBAppException(
+						"Add check constraint similar to CHECK(COLUMN_NAME BETWEEN MIN_VALUE AND MAX_VALUE) to specify each column min and max values");
+			}
 			switch (colType) {
 			case "int":
 				colType = "java.lang.Integer";
-				colMin = Integer.MIN_VALUE + "";
-				colMax = Integer.MAX_VALUE + "";
 				break;
 			case "double":
 				colType = "java.lang.Double";
-				colMin = Double.MIN_VALUE + "";
-				colMax = Double.MAX_VALUE + "";
 				break;
 			case "date":
 				colType = "java.util.Date";
-				colMin = "0000-00-00";
-				colMax = "9999-12-31";
 				break;
 			case "varchar":
 				colType = "java.lang.String";
-				colMin = ((char) 32) + "";
-				colMax = ((char) 126) + "";
 				break;
 			default:
 				throw new DBAppException("Syntax error, unsupported data type " + colType);
@@ -247,9 +296,12 @@ public class MainParser {
 			colNameType.put(colName, colType);
 			colNameMin.put(colName, colMin);
 			colNameMax.put(colName, colMax);
+			if (sa.readNextWord().equals(")"))
+				break;
 			if (!sa.nextWord().equals(","))
 				throw new DBAppException("separate input columns with commas");
 		}
+		sa.nextWord();
 		if (colNameType.size() == 0)
 			throw new DBAppException("table must have at least one column");
 		if (clusteringKey.equals(""))
@@ -258,9 +310,91 @@ public class MainParser {
 		DBApp db = new DBApp();
 		db.createTable(tableName, clusteringKey, colNameType, colNameMin, colNameMax);
 	}
-
-	public static void main(String[] args) {
-
+	
+	private static void deleteDir(File file) {
+	    File[] contents = file.listFiles();
+	    if (contents != null) {
+	        for (File f : contents) {
+	            deleteDir(f);
+	        }
+	    }
+	    file.delete();
 	}
 
+	public static void main(String[] args) throws DBAppException {
+		MainParser mp = new MainParser();
+		// id,name,salary,dob
+		// mp.parseSQL("create index yoyo on employee(id,salary)");
+		// mp.parseSQL("create table employee(id int check(id between 1 and 1000),name varchar check (name between 'a' and 'zzzzzzzz'),salary double check(salary between 0 and 10000),dob date check(dob between '1930-01-01' and '2030-12-31'),primary key(id))");
+//mp.parseSQL("update employee set name = 'ali' where id = 6");
+//				for(int i = 1; i<700;i+=2) {
+//			String name = i % 5 == 0?"mohamed":i%5==1?"hesham":i%5==2?"omar":i%5==3?"samer":"zinger";
+//			mp.parseSQL("insert into employee values("+i+",'"+name+"',"+(i*10)+",'1999-10-10')");
+//		}
+//		//mp.parseSQL("insert into employee values(103,'omar',1000,'1990-10-10')");
+//		//mp.parseSQL("delete from employee where id = 0");
+		// Table t =
+		// (Table)Serializer.deserilize("src/main/resources/data/employee/employee.ser");
+//		//for(Column c : t.getColumns())
+		// System.out.println(t.getIndecies().get(0));
+		// t.getIndecies().remove(0);
+		// Serializer.serialize("src/main/resources/data/employee/employee.ser", t);
+		// System.out.println(t.getIndecies().get(0));
+//			//System.out.println("ahmed".compareTo("z"));
+		Scanner sc = new Scanner(System.in);
+		while (true) {
+			String instruction = sc.nextLine();
+			if (instruction.equals("exit"))
+				break;
+			StringAnalyzer sa = new StringAnalyzer(instruction);
+			if (sa.readNextWord().equals("show")) {
+				sa.nextWord();
+				if (sa.readNextWord().equals("table")) {
+					sa.nextWord();
+					String tableName = sa.nextWord();
+					String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
+					Table t = (Table) Serializer.deserilize(path);
+					System.out.println(t);
+				} else if (sa.nextWord().equals("index")) {
+					int id = Integer.parseInt(sa.nextWord());
+					sa.nextWord();
+					sa.nextWord();
+					String tableName = sa.nextWord();
+					String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
+					Table t = (Table) Serializer.deserilize(path);
+					System.out.println(t.getIndecies().get(id));
+				}
+			} else if(sa.nextWord().equals("drop")) {
+				if (sa.readNextWord().equals("table")) {
+					sa.nextWord();
+					String tableName = sa.nextWord();
+					String path = "src/main/resources/data/" + tableName;
+					File index = new File(path);
+					deleteDir(index);
+					System.out.println("the table "+tableName+" has been deleted");
+				} else if (sa.nextWord().equals("index")) {
+					int id = Integer.parseInt(sa.nextWord());
+					sa.nextWord();
+					sa.nextWord();
+					String tableName = sa.nextWord();
+					String path = "src/main/resources/data/" + tableName + "/index" + id;
+					File f = new File(path);
+					deleteDir(f);
+					path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
+					Table t = (Table) Serializer.deserilize(path);
+					t.getIndecies().remove(id);
+					Serializer.serialize(path, t);
+					System.out.println("the index "+id+" on table "+tableName+" have been deleted");
+				}
+			}
+			
+			else {
+				Iterator res = mp.parseSQL(instruction);
+				while (res!=null&&res.hasNext()) {
+					System.out.println(res.next());
+				}
+			}
+		}
+
+	}
 }

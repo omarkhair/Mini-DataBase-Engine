@@ -248,6 +248,9 @@ public class Table implements Serializable, TableObserver {
 					throw new DBAppException("mismatching data type of column " + ent.getKey());
 				String val2 = (String) val;
 				if (val2.compareTo(((String) c.getMax())) > 0 || val2.compareTo(((String) c.getMin())) < 0) {
+//					System.out.println((String) c.getMax());
+//					System.out.println((String) c.getMin());
+//					System.out.println(val2);
 					throw new DBAppException("out of bounds value for column " + ent.getKey());
 				}
 			} else if (val instanceof Integer) {
@@ -492,6 +495,7 @@ public class Table implements Serializable, TableObserver {
 		}
 		GridIndex g = getBestIndex(selectTerms);
 		if (g == null) {
+			System.out.println("no index used in deletion");
 			deleteRecords(colNameValue);
 			return;
 		} else {
@@ -560,7 +564,7 @@ public class Table implements Serializable, TableObserver {
 			throws DBAppException {
 		Vector<Tuple> res = new Vector<Tuple>();
 		for (Integer i : pagesIds) {
-			Page p = pages.get(i);
+			Page p = getPageWithId(i);
 			p.readData();
 			for (Tuple t : p.getData()) {
 				if (evaluateSelectOnTuple(t, sqlTerms, arrayOperators))
@@ -568,7 +572,10 @@ public class Table implements Serializable, TableObserver {
 			}
 			p.setData(null);
 		}
-		return res.iterator();
+		Vector<String> strings = new Vector<String>();
+		for (Tuple t : res)
+			strings.add(t.toString());
+		return strings.iterator();
 	}
 
 	private boolean evaluateSelectOnTuple(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
@@ -636,6 +643,7 @@ public class Table implements Serializable, TableObserver {
 		return prev;
 	}
 
+	@SuppressWarnings("unused")
 	private boolean evaluateSelectOnTupleNoPrescedence(Tuple t, SQLTerm[] sqlTerms, String[] arrayOperators, int i)
 			throws DBAppException {
 		if (i == arrayOperators.length) {
@@ -683,6 +691,28 @@ public class Table implements Serializable, TableObserver {
 			if (p.getId() == i)
 				return p;
 		return null;
+	}
+	
+	public void updateUsingIndex(String clusteringKey, Hashtable<String, Object> columnNameValue) throws DBAppException {
+		boolean found = false ; 
+		GridIndex g = null; 
+		for(GridIndex index : indecies) {
+			if(index.getDim()==1 && index.getColumns().get(0).getName().equals(this.clusteringKey)) {
+				found = !found ;
+				g = index;
+				break ; 
+			}
+		}
+		if(!found) {
+			updateRecord(clusteringKey, columnNameValue);
+		}
+		else {
+			System.out.println("The update has been done using the index");
+			Object ck = Utilities.parseType(clusteringKey, clusteringKeyType);
+			int pageId = g.getPageWithClustering(ck);
+			Page p = getPageWithId(pageId); 
+			p.updateRecord(clusteringKey, columnNameValue, columns); 
+		}
 	}
 
 }

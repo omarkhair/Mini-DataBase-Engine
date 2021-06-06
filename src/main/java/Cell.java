@@ -88,4 +88,16 @@ public class Cell implements Serializable{
 		res += "\n";
 		return res;
 	}
+	
+	public int getPageFromCell(Object clusteringKey) throws DBAppException {
+		for(Bucket b :buckets) {
+			b.readData();
+			for(BucketEntry be : b.getEntries()) {
+				if(clusteringKey.equals(be.getClusteringKeyValue())) {
+					return be.getPageId();
+				}
+			}
+		}
+		return -1 ; 
+	}
 }

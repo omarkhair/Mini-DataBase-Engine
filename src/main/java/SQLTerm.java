@@ -65,5 +65,9 @@ public class SQLTerm {
 
 	}
 	}
+	
+	public String toString() {
+		return _strColumnName+" "+_strOperator+" "+_objValue.toString();
+	}
 
 }

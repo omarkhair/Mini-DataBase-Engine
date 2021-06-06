@@ -51,7 +51,7 @@ public class GridIndex implements Serializable {
 			if (col.getDataType().equals("java.lang.Integer")) {
 				int min = (Integer) col.getMin();
 				int max = (Integer) col.getMax();
-				int divSize = (max - min + 9) / 10;
+				int divSize =(max-min+9)/ 10;
 				range[i][0] = min;
 				for (int j = 1; j < 11; j++) {
 					range[i][j] = (Integer) range[i][j - 1] + divSize;
@@ -274,6 +274,38 @@ public class GridIndex implements Serializable {
 			}
 		}
 		return true;
+	}
+	
+	public int getPageWithClustering(Object clusteringKey) throws DBAppException {
+		int[] cellIdx = new int[dim];
+		for (int i = 0; i < dim; i++) {
+			@SuppressWarnings("rawtypes")
+			Comparable key = (Comparable) clusteringKey;
+			if (columns.get(i).getDataType().equals("java.util.Date")) {
+				SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd");
+				key = Utilities.dateToDays(s.format((Date) key));
+			}
+			Object[] limits = range[i];
+			if (key.equals(limits[10])) {
+				cellIdx[i] = 9;
+			}
+			for (int j = 1; j < 11; j++) {
+				if (key.compareTo(limits[j]) < 0) {
+					cellIdx[i] = j - 1;
+					break;
+				}
+			}
+		}
+		Cell target = access(cellIdx); 
+		return target.getPageFromCell(clusteringKey);
+	}
+	
+	public int getDim() {
+		return dim;
+	}
+
+	public void setDim(int dim) {
+		this.dim = dim;
 	}
 
 }

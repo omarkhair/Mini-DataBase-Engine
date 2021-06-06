@@ -29,6 +29,10 @@ public class DBApp implements DBAppInterface {
 		file = new File(path + "/pages");
 		file.mkdir();
 		Serializer.serialize(path + "/" + tableName + ".ser", table);
+		System.out.println("The table " + table.getTableName() + " has been created with the following columns");
+		for (Column c : table.getColumns())
+			System.out.println(c);
+		System.out.println("make sure to insert in the table with the displayed columns order");
 	}
 
 	private void validateEntries(String tableName, String clusteringKey, Hashtable<String, String> colNameType,
@@ -65,7 +69,14 @@ public class DBApp implements DBAppInterface {
 		// insert all rows of the table in the newly created index
 		table.populateIndex(index);
 		Serializer.serialize(path, table);
-		// System.out.println(index);
+		System.out.print("An index has been created on table " + table.getTableName() + " on columns ");
+		for (int i = 0; i < cols.size(); i++) {
+			if (i == cols.size() - 1)
+				System.out.print(cols.get(i).getName());
+			else
+				System.out.print(cols.get(i).getName() + ", ");
+		}
+		System.out.println();
 	}
 
 	@Override
@@ -85,7 +96,7 @@ public class DBApp implements DBAppInterface {
 		String path = "src/main/resources/data/" + tableName + "/" + tableName + ".ser";
 		Table table = (Table) Serializer.deserilize(path);
 		table.verifyUpdate(clusteringKeyValue, columnNameValue);
-		table.updateRecord(clusteringKeyValue, columnNameValue);
+		table.updateUsingIndex(clusteringKeyValue, columnNameValue);
 		// table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
@@ -105,9 +116,11 @@ public class DBApp implements DBAppInterface {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Iterator selectFromTable(SQLTerm[] sqlTerms, String[] arrayOperators) throws DBAppException {
+		if(sqlTerms.length==0)
+			throw new DBAppException("You have to add at least one select condition");
 		Table table = (Table) Serializer.deserilize("src/main/resources/data/" + sqlTerms[0].get_strTableName() + "/"
 				+ sqlTerms[0].get_strTableName() + ".ser");
-		Vector<Column> selectColumns = validateSelect(sqlTerms, arrayOperators, table);
+		validateSelect(sqlTerms, arrayOperators, table);
 		Vector<SQLTerm> andedTerms = new Vector<SQLTerm>();
 		andedTerms.add(sqlTerms[0]);
 		int i = 1;
@@ -123,23 +136,32 @@ public class DBApp implements DBAppInterface {
 					break;
 				}
 				andedTerms.removeAllElements();
+				andedTerms.add(sqlTerms[i]);
 			}
 			i++;
 		}
+		if(!andedTerms.isEmpty()) {
+			try {
+				pagesIds.addAll(computeAND(andedTerms, table));
+			} catch (NoIndexFoundException e) {
+				pagesIds = table.getAllPagesIds();
+			}
+		}
 
+		System.out.println("select search space is the following pages: "+pagesIds.toString());
 		return table.evaluateSelect(pagesIds, sqlTerms, arrayOperators);
 
 	}
 
 	private TreeSet<Integer> computeAND(Vector<SQLTerm> andedTerms, Table table)
 			throws NoIndexFoundException, DBAppException {
+		//System.out.println(andedTerms.toString());
 		GridIndex g = table.getBestIndex(andedTerms);
 		if (g == null)
 			throw new NoIndexFoundException();
 		Vector<SQLTerm> andedTermsInIndex = Utilities.getAndedTermsInIndex(g, andedTerms);
 		return g.getPagesIds(andedTermsInIndex);
 	}
-
 
 	private Vector<Column> validateSelect(SQLTerm[] sqlTerms, String[] arrayOperators, Table table)
 			throws DBAppException {
@@ -158,8 +180,8 @@ public class DBApp implements DBAppInterface {
 						"Column " + t.get_strColumnName() + " does not exist in table " + table.getTableName());
 			else
 				res.add(flag);
-			if (t.get_strOperator() != ">" && t.get_strOperator() != ">=" && t.get_strOperator() != "<"
-					&& t.get_strOperator() != "<=" && t.get_strOperator() != "!=" && t.get_strOperator() != "=")
+			if (!t.get_strOperator().equals(">")&& !t.get_strOperator().equals(">=")&& !t.get_strOperator().equals("<")
+					&& !t.get_strOperator().equals("<=") && !t.get_strOperator().equals("!=") && !t.get_strOperator().equals("="))
 				throw new DBAppException("undefined operator " + t.get_strOperator());
 			// Utilities.parseType(flag.getDataType(), dataType);
 			if (flag.getDataType().equals("java.lang.Integer") && !(t.get_objValue() instanceof Integer))
