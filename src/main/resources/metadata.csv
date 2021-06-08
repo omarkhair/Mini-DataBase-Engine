@@ -1,5 +1,3 @@
 Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max
-employee,id,java.lang.Integer,True,False,1,1000
-employee,name,java.lang.String,False,False,a,zzzzzzzz
-employee,salary,java.lang.Double,False,False,0,10000
-employee,dob,java.util.Date,False,False,1930-01-01,2030-12-31
+so7aby,name,java.lang.String,True,False,A,zzzzzzzz
+so7aby,age,java.lang.Integer,False,False,0,30
