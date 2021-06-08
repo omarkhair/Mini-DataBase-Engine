@@ -87,18 +87,6 @@ public class Table implements Serializable, TableObserver {
 		this.pages = pages;
 	}
 
-	public void insertRecord(Hashtable<String, Object> colNameValue) throws DBAppException {
-		Vector<Object> data = new Vector<>();
-		for (Column c : columns) {
-			data.add(colNameValue.getOrDefault(c.getName(), null));
-		}
-		Tuple t = new Tuple(data);
-		insertRecordOverflow(t);
-
-//the commented method shifts all full pages to insert instead of creating extra pages
-//		insertRecordHelper(t);
-	}
-
 	public void insertRecordOverflow(Tuple t) throws DBAppException {
 		if (pages.size() == 0) {
 			Page page = new Page(tableName, clusteringKeyType, lastPageId++, this);
@@ -107,37 +95,7 @@ public class Table implements Serializable, TableObserver {
 		} else {
 			int target = binarySearch(t.getData().get(0));
 			Page currentPage = pages.get(target);
-			if (currentPage.getNumberOfTuples() < pageMaxRows) {
-				currentPage.insertRecord(t);
-				return;
-			} else {
-				if (target == pages.size() - 1) {
-					Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
-					currentPage.insertRecord(t);
-					Tuple lastRecord = currentPage.removeLastRecord();
-					nextPage.insertRecord(lastRecord);
-					pages.add(nextPage);
-					return;
-				}
-				Page nextPage = pages.get(target + 1);
-				if (nextPage.getNumberOfTuples() < pageMaxRows) {
-					currentPage.insertRecord(t);
-					Tuple lastRecord = currentPage.removeLastRecord();
-					nextPage.insertRecord(lastRecord);
-					return;
-				}
-				// current and next pages are both full, and an overflow page is needed
-				Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
-				currentPage.insertRecordInMemory(t);
-				for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
-					overflowPage.insertRecordInMemory(currentPage.removeLastRecordInMemory());
-				}
-				pages.add(target + 1, overflowPage);
-				currentPage.writeData();
-				currentPage.setData(null);
-				overflowPage.writeData();
-				overflowPage.setData(null);
-			}
+			InserOverflowHelper(target, currentPage, t);
 		}
 	}
 
@@ -488,6 +446,8 @@ public class Table implements Serializable, TableObserver {
 	}
 
 	public void deleteUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
+		create_metadata();
+		readMetaData();
 		SQLTerm[] sqlTerms = createSqlTerms(colNameValue);
 		Vector<SQLTerm> selectTerms = new Vector<SQLTerm>();
 		for (SQLTerm st : sqlTerms) {
@@ -694,6 +654,8 @@ public class Table implements Serializable, TableObserver {
 	}
 	
 	public void updateUsingIndex(String clusteringKey, Hashtable<String, Object> columnNameValue) throws DBAppException {
+		create_metadata();
+		readMetaData();
 		boolean found = false ; 
 		GridIndex g = null; 
 		for(GridIndex index : indecies) {
@@ -712,6 +674,72 @@ public class Table implements Serializable, TableObserver {
 			int pageId = g.getPageWithClustering(ck);
 			Page p = getPageWithId(pageId); 
 			p.updateRecord(clusteringKey, columnNameValue, columns); 
+		}
+	}
+	
+	public void insertUsingIndex(Hashtable<String, Object> colNameValue) throws DBAppException {
+		create_metadata();
+		readMetaData();
+		Vector<Object> data = new Vector<>();
+		for (Column c : columns) {
+			data.add(colNameValue.getOrDefault(c.getName(), null));
+		}
+		Tuple t = new Tuple(data);
+		GridIndex g = null;
+		boolean found = false;
+		for (GridIndex index : indecies) {
+			if (index.getDim() == 1 && index.getColumns().get(0).getName().equals(this.clusteringKey)) {
+				found = !found;
+				g = index;
+				break;
+			}
+		}
+		if (!found) {
+			insertRecordOverflow(t);
+		} else {
+			
+			int target = g.getPageforInsert(t.getData().get(0));
+			if (target == -1) {
+				insertRecordOverflow(t);
+			} else {
+				System.out.println("Inserted Using Index");
+				Page currentPage = getPageWithId(target);
+				InserOverflowHelper(target, currentPage, t);
+			}
+		}
+	}
+	
+	public void InserOverflowHelper(int target, Page currentPage, Tuple t) throws DBAppException {
+		if (currentPage.getNumberOfTuples() < pageMaxRows) {
+			currentPage.insertRecord(t);
+			return;
+		} else {
+			if (target == pages.size() - 1) {
+				Page nextPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
+				currentPage.insertRecord(t);
+				Tuple lastRecord = currentPage.removeLastRecord();
+				nextPage.insertRecord(lastRecord);
+				pages.add(nextPage);
+				return;
+			}
+			Page nextPage = pages.get(target + 1);
+			if (nextPage.getNumberOfTuples() < pageMaxRows) {
+				currentPage.insertRecord(t);
+				Tuple lastRecord = currentPage.removeLastRecord();
+				nextPage.insertRecord(lastRecord);
+				return;
+			}
+			// current and next pages are both full, and an overflow page is needed
+			Page overflowPage = new Page(tableName, clusteringKeyType, lastPageId++, this);
+			currentPage.insertRecordInMemory(t);
+			for (int i = pageMaxRows; i > pageMaxRows / 2; i--) {
+				overflowPage.insertRecordInMemory(currentPage.removeLastRecordInMemory());
+			}
+			pages.add(target + 1, overflowPage);
+			currentPage.writeData();
+			currentPage.setData(null);
+			overflowPage.writeData();
+			overflowPage.setData(null);
 		}
 	}
 

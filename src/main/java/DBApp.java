@@ -85,7 +85,7 @@ public class DBApp implements DBAppInterface {
 		Table table = (Table) Serializer.deserilize(path);
 		table.verifyInsertion(colNameValue);
 		// verify the types of the inserted values
-		table.insertRecord(colNameValue);
+		table.insertUsingIndex(colNameValue);
 		// table.updatePagesRecord();
 		Serializer.serialize(path, table);
 	}
@@ -120,6 +120,8 @@ public class DBApp implements DBAppInterface {
 			throw new DBAppException("You have to add at least one select condition");
 		Table table = (Table) Serializer.deserilize("src/main/resources/data/" + sqlTerms[0].get_strTableName() + "/"
 				+ sqlTerms[0].get_strTableName() + ".ser");
+		table.create_metadata();
+		table.readMetaData();
 		validateSelect(sqlTerms, arrayOperators, table);
 		Vector<SQLTerm> andedTerms = new Vector<SQLTerm>();
 		andedTerms.add(sqlTerms[0]);

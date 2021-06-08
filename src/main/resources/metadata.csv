@@ -1,3 +1,6 @@
 Table Name,Column Name,Column Type,ClusteringKey,Indexed,min,max
-so7aby,name,java.lang.String,True,False,A,zzzzzzzz
-so7aby,age,java.lang.Integer,False,False,0,30
+students,id,java.lang.String,True,False,43-0000,99-9999
+students,gpa,java.lang.Double,False,False,0.7,5.0
+students,last_name,java.lang.String,False,False,AAAAAA,zzzzzz
+students,first_name,java.lang.String,False,False,AAAAAA,zzzzzz
+students,dob,java.util.Date,False,False,1990-01-01,2000-12-31

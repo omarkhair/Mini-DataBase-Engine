@@ -307,5 +307,57 @@ public class GridIndex implements Serializable {
 	public void setDim(int dim) {
 		this.dim = dim;
 	}
+	
+	public int[] getCellIdUsingClustKey(Object clusteringKey) {
+		int[] cellIdx = new int[dim];
+		for (int i = 0; i < dim; i++) {
+			@SuppressWarnings("rawtypes")
+			Comparable key = (Comparable) clusteringKey;
+			if (columns.get(i).getDataType().equals("java.util.Date")) {
+				SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd");
+				key = Utilities.dateToDays(s.format((Date) key));
+			}
+			Object[] limits = range[i];
+			if (key.equals(limits[10])) {
+				cellIdx[i] = 9;
+			}
+			for (int j = 1; j < 11; j++) {
+				if (key.compareTo(limits[j]) < 0) {
+					cellIdx[i] = j - 1;
+					break;
+				}
+			}
+		}
+		return cellIdx;
+	}
+	
+	public int getPageforInsert(Object clusteringKey) throws DBAppException {
+		int[] dim = getCellIdUsingClustKey(clusteringKey);
+		Cell target = access(dim);
+		if (target.getBuckets().size() == 0) {
+			return -1;
+		} else {
+			Comparable maxSofare = (Comparable) range[0][dim[0]];
+			int pageId = -1;
+			for (Bucket b : target.getBuckets()) {
+				b.readData();
+				for (BucketEntry be : b.getEntries()) {
+					Comparable key = (Comparable) be.getClusteringKeyValue();
+					Comparable clust = (Comparable) clusteringKey;
+					if (key.compareTo(clust) < 0 && key.compareTo(maxSofare) >= 0) {
+						maxSofare = key;
+						pageId = be.getPageId();
+					}
+				}
+			}
+			return pageId;
+		}
+
+	}
+	
+	public int getPageWithClustering(String clusteringKey) throws DBAppException {
+		Cell target = access(getCellIdUsingClustKey(clusteringKey));
+		return target.getPageFromCell(clusteringKey);
+	}
 
 }

@@ -5,7 +5,7 @@ To test our project parser and logic:-
 	2-drop index INDEX_ID on table TABLE_NAME ---to drop an index from the database engine
 	3-show table TABLE_NAME ---prints the toString() method of the table
 	4-show index INDEX_ID on table TABLE_NAME ---prints the toString() method of the index
-	5-exit to terminate the program
+	5-exit ---to terminate the program
 	6-create table TABLE_NAME(COLUMN_NAME COLUMN_DATA_TYPE CHECK(COLUMN_NAME BETWEEN COLUMN_MIN and COLUMN_MAX), ..., primary key(CLUSTERING_KEY_NAME))
 	7-create index INDEX_NAME on TABLE_NAME(COLUMN_NAME_1,...)
 	8-select * from TABLE_NAME where CONDITION_1 OPERATOR_1 CONDITION_2 ....
