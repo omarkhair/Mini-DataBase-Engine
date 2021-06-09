@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome file</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="welcome-to-our-mini-database-engine">Welcome to our Mini Database Engine!</h1>
+<p>This project is an application of the <strong>Advanced Database</strong> course where we are concerned with database optimization and file organization on disk. It is a simplified version of a DBMS (Database Management System) where only the following operations are supported:-</p>
+<ol>
+<li>Creating table.</li>
+<li>Inserting a tuple.</li>
+<li>Deleting tuples.</li>
+<li>Searching in table.</li>
+<li>Creating a grid index.</li>
+<li>Dropping a table or an index.</li>
+</ol>
+<h2 id="bonus-features-">Bonus Features :)</h2>
+<p>We implemented 3 bonus features that were not required in the project description.</p>
+<ol>
+<li><strong>SQL parser</strong> support which enables the user to execute written SQL statements instead of using the API.</li>
+<li>Supporting <strong>Operator precedence</strong> in the select statement (AND -&gt; OR -&gt; XOR).</li>
+<li>Supporting <strong>Partial queries</strong> on the Grid index.</li>
+</ol>
+<h2 id="how-to-work-with-our-engine">How to work with our Engine?</h2>
+<p>There are two ways you can interact with it:-</p>
+<ol>
+<li>You can use the API provided by the <strong>DBAppInterface.java</strong> where you can find a method for each of the operations mentioned.</li>
+<li>Or you can interact with our smart <strong>SQL Interpreter</strong> through writing SQL statements right into the console. Just run the main method in the <strong>MainParser.java</strong>  class and start writing!</li>
+</ol>
+<h2 id="supported-syntax">Supported syntax</h2>
+<h4 id="to-create-a-new-table">To create a new table:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">create</span> <span class="token keyword">table</span> TABLE_NAME<span class="token punctuation">(</span>
+COLUMN1_NAME COLUMN1_DATA_TYPE 
+<span class="token keyword">CHECK</span><span class="token punctuation">(</span>COLUMN1_NAME <span class="token operator">BETWEEN</span> COLUMN1_MIN <span class="token operator">and</span> COLUMN1_MAX<span class="token punctuation">)</span><span class="token punctuation">,</span>
+COLUMN2_NAME COLUMN2_DATA_TYPE 
+<span class="token keyword">CHECK</span><span class="token punctuation">(</span>COLUMN2_NAME <span class="token operator">BETWEEN</span> COLUMN2_MIN <span class="token operator">and</span> COLUMN2_MAX<span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">,</span> 
+<span class="token keyword">primary</span> <span class="token keyword">key</span><span class="token punctuation">(</span>CLUSTERING_KEY_NAME<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>: It’s obligatory to specify the Min and Max values for each column.<br>
+The primary key can only be <strong>one column</strong>.</p>
+</blockquote>
+<h4 id="to-remove-a-table">To remove a table:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">drop</span> <span class="token keyword">table</span> TABLE_NAME
+</code></pre>
+<h4 id="to-create-a-new-grid-index-on-a-table">To create a new Grid Index on a table:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">create</span> <span class="token keyword">index</span> INDEX_NAME <span class="token keyword">on</span> TABLE_NAME<span class="token punctuation">(</span>COLUMN_NAME_1<span class="token punctuation">,</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span>
+</code></pre>
+<h4 id="to-remove-an-index-from-a-table">To remove an index from a table:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">drop</span> <span class="token keyword">index</span> INDEX_ID <span class="token keyword">on</span> <span class="token keyword">table</span> TABLE_NAME
+</code></pre>
+<h4 id="to-insert-a-record">To insert a record:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">insert</span> <span class="token keyword">into</span> TABLE_NAME <span class="token keyword">values</span><span class="token punctuation">(</span>COLUMN_1_VALUE<span class="token punctuation">,</span> COLUMN_2_VALUE<span class="token punctuation">,</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span>
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>:<br>
+It’s obligatory to insert values for all columns and the order should be according to the order displayed to the console during the table creation.<br>
+Date acceptable format is “YYYY-MM-DD”</p>
+</blockquote>
+<h4 id="to-update-a-record">To update a record:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">update</span> TABLE_NAME <span class="token keyword">set</span> COLUMN_1 <span class="token operator">=</span> VALUE_1<span class="token punctuation">,</span> COLUMN_2 <span class="token operator">=</span> VALUE_2<span class="token punctuation">,</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> 
+<span class="token keyword">where</span> CLUSTERING_KEY_NAME <span class="token operator">=</span> CLUSTERING_KEY_VALUE
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>:<br>
+The update can only happen to the one tuple specified by the CLUSTERING_KEY_VALUE.<br>
+Update using a condition on other columns is not supported.</p>
+</blockquote>
+<h4 id="to-delete-records">To delete records:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">delete</span> <span class="token keyword">from</span> TABLE_NAME <span class="token keyword">where</span> CONDITION_1 <span class="token operator">and</span> CONDITION_2 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>: The conditions in the delete statement must be <strong>AND</strong>ed together and must have = as their operators.</p>
+</blockquote>
+<h4 id="to-select-records">To select records:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">select</span> <span class="token operator">*</span> <span class="token keyword">from</span> TABLE_NAME <span class="token keyword">where</span> CONDITION_1 OPERATOR_1 CONDITION_2 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+</code></pre>
+<blockquote>
+<p><strong>Note</strong>:<br>
+The conditions in the select statement could have <strong>&gt;=</strong>, <strong>&gt;</strong> , <strong>&lt;=</strong> , <strong>&lt;</strong> , <strong>=</strong> ,  or <strong>!=</strong><br>
+The operators in the select statement could be AND, OR, or XOR<br>
+The AND has the highest precedence, then comes the OR, then XOR</p>
+</blockquote>
+<h4 id="to-see-the-contents-of-a-table">To see the contents of a table:</h4>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">show</span> <span class="token keyword">table</span> TABLE_NAME
+</code></pre>
+<h4 id="to-terminate-the-parser-program-type-exit">To terminate the Parser program type <code>exit</code></h4>
+<p><strong>General Notes</strong>:</p>
+<ul>
+<li>Each SQL statement must be passed to the console in one line (The parser can support multiple-line SQL commands but not through the console).</li>
+<li>The parser does not support commenting or nested queries.</li>
+<li>The parser is not case sensitive.</li>
+</ul>
+<h2 id="supported-data-types">Supported Data Types</h2>
+<p>We support only four data types:-</p>
+
+<table>
+<thead>
+<tr>
+<th align="center">Java</th>
+<th align="center">SQL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">java.lang.Integer</td>
+<td align="center">int</td>
+</tr>
+<tr>
+<td align="center">java.lang.String</td>
+<td align="center">varchar</td>
+</tr>
+<tr>
+<td align="center">java.lang.Double</td>
+<td align="center">double</td>
+</tr>
+<tr>
+<td align="center">java.util.Date</td>
+<td align="center">date</td>
+</tr>
+</tbody>
+</table><blockquote>
+<p>Date acceptable format is “YYYY-MM-DD”</p>
+</blockquote>
+<h2 id="simplified-flow-chart">Simplified Flow Chart</h2>
+<pre class=" language-mermaid"><svg id="mermaid-svg-1hI9OM3LlCHns9v5" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="149.3333282470703" style="max-width: 880.875px;" viewBox="0 0 880.875 149.3333282470703"><style>#mermaid-svg-1hI9OM3LlCHns9v5{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-svg-1hI9OM3LlCHns9v5 .error-icon{fill:#552222;}#mermaid-svg-1hI9OM3LlCHns9v5 .error-text{fill:#552222;stroke:#552222;}#mermaid-svg-1hI9OM3LlCHns9v5 .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-1hI9OM3LlCHns9v5 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-1hI9OM3LlCHns9v5 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-1hI9OM3LlCHns9v5 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-1hI9OM3LlCHns9v5 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-1hI9OM3LlCHns9v5 .marker{fill:#666;stroke:#666;}#mermaid-svg-1hI9OM3LlCHns9v5 .marker.cross{stroke:#666;}#mermaid-svg-1hI9OM3LlCHns9v5 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-1hI9OM3LlCHns9v5 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#000000;}#mermaid-svg-1hI9OM3LlCHns9v5 .cluster-label text{fill:#333;}#mermaid-svg-1hI9OM3LlCHns9v5 .cluster-label span{color:#333;}#mermaid-svg-1hI9OM3LlCHns9v5 .label text,#mermaid-svg-1hI9OM3LlCHns9v5 span{fill:#000000;color:#000000;}#mermaid-svg-1hI9OM3LlCHns9v5 .node rect,#mermaid-svg-1hI9OM3LlCHns9v5 .node circle,#mermaid-svg-1hI9OM3LlCHns9v5 .node ellipse,#mermaid-svg-1hI9OM3LlCHns9v5 .node polygon,#mermaid-svg-1hI9OM3LlCHns9v5 .node path{fill:#eee;stroke:#999;stroke-width:1px;}#mermaid-svg-1hI9OM3LlCHns9v5 .node .label{text-align:center;}#mermaid-svg-1hI9OM3LlCHns9v5 .node.clickable{cursor:pointer;}#mermaid-svg-1hI9OM3LlCHns9v5 .arrowheadPath{fill:#333333;}#mermaid-svg-1hI9OM3LlCHns9v5 .edgePath .path{stroke:#666;stroke-width:1.5px;}#mermaid-svg-1hI9OM3LlCHns9v5 .flowchart-link{stroke:#666;fill:none;}#mermaid-svg-1hI9OM3LlCHns9v5 .edgeLabel{background-color:white;text-align:center;}#mermaid-svg-1hI9OM3LlCHns9v5 .edgeLabel rect{opacity:0.5;background-color:white;fill:white;}#mermaid-svg-1hI9OM3LlCHns9v5 .cluster rect{fill:hsl(210,66.6666666667%,95%);stroke:#26a;stroke-width:1px;}#mermaid-svg-1hI9OM3LlCHns9v5 .cluster text{fill:#333;}#mermaid-svg-1hI9OM3LlCHns9v5 .cluster span{color:#333;}#mermaid-svg-1hI9OM3LlCHns9v5 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(-160,0%,93.3333333333%);border:1px solid #26a;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-svg-1hI9OM3LlCHns9v5:root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-svg-1hI9OM3LlCHns9v5 flowchart-v2{fill:apa;}</style><g transform="translate(0, 0)"><marker id="flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M54.20978701054425,69.41972870851562L67.3125540609109,66.4053297442281C80.41532111127755,63.39093077994059,106.62085521201084,57.36213285136555,132.72709427267208,56.80757318781059C158.83333333333334,56.25301352425563,184.84027735392252,61.172692125720715,197.84374936421713,63.63253142645326L210.84722137451172,66.09237072718581" id="L-E-A" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-A" style="fill:none;" marker-end="url(#flowchart-pointEnd)"></path><path d="M210.84722137451172,83.24096514927903L197.84374936421713,85.70080445001157C184.84027735392252,88.16064375074411,158.83333333333334,93.08032235220922,132.72709427267208,92.52576268865425C106.62085521201084,91.97120302509929,80.41532111127755,85.94240509652427,67.3125540609109,82.92800613223675L54.20978701054425,79.91360716794922" id="L-A-E" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-E" style="fill:none;" marker-end="url(#flowchart-pointEnd)"></path><path d="M301.5,65.96698420916752L314.2071762084961,63.52804266143803C326.9143524169922,61.08910111370852,352.3287048339844,56.211218018249525,377.74305725097656,56.548176003478545C403.15740966796875,56.88513398870756,428.57176208496094,62.436933054624596,441.27893829345703,65.21283258758311L453.9861145019531,67.98873212054163" id="L-A-B" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#flowchart-pointEnd)"></path><path d="M453.9861145019531,81.34460375592322L441.27893829345703,84.12050328888174C428.57176208496094,86.89640282184025,403.15740966796875,92.44820188775729,377.74305725097656,92.7851598729863C352.3287048339844,93.1221178582153,326.9143524169922,88.24423476275632,314.2071762084961,85.80529321502682L301.5,83.36635166729732" id="L-B-A" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-A" style="fill:none;" marker-end="url(#flowchart-pointEnd)"></path><path d="M515.1250038146973,74.66666793823242L524.3044020334879,74.66666793823242C533.4838002522787,74.66666793823242,551.84259668986,74.66666793823242,570.2013931274414,74.66666793823242C588.5601895650228,74.66666793823242,606.9189860026041,74.66666793823242,616.0983842213949,74.66666793823242L625.2777824401855,74.66666793823242" id="L-B-Table" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-Table" style="fill:none;"></path><path d="M678.3472290039062,59.764594001355434L687.5266272226969,54.60938399598223C696.7060254414877,49.45417399060903,715.064821879069,39.143753979862616,736.4259332021078,33.98854397448941C757.7870445251465,28.83333396911621,782.1504707336426,28.83333396911621,794.3321838378906,28.83333396911621L806.5138969421387,28.83333396911621" id="L-Table-Page" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-Table LE-Page" style="fill:none;"></path><path d="M678.3472290039062,89.56874187510941L687.5266272226969,94.72395188048262C696.7060254414877,99.87916188585582,715.064821879069,110.18958189660223,733.4236183166504,115.34479190197543C751.7824147542318,120.50000190734863,770.1412111918131,120.50000190734863,779.3206094106039,120.50000190734863L788.5000076293945,120.50000190734863" id="L-Table-GridIndex" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-Table LE-GridIndex" style="fill:none;"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(132.82638931274414, 51.33333492279053)"><g class="label" transform="translate(-53.02083206176758, -13.333333015441895)"><foreignObject width="106.04166412353516" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">SQL Statement</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(132.82638931274414, 98.00000095367432)"><g class="label" transform="translate(-45.4444465637207, -13.333333015441895)"><foreignObject width="90.8888931274414" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Query Result</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(377.74305725097656, 51.33333492279053)"><g class="label" transform="translate(-41.625, -13.333333015441895)"><foreignObject width="83.25" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Method call</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(377.74305725097656, 98.00000095367432)"><g class="label" transform="translate(-51.24305725097656, -13.333333015441895)"><foreignObject width="102.48611450195312" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Method return</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(570.2013931274414, 74.66666793823242)"><g class="label" transform="translate(-30.07638931274414, -13.333333015441895)"><foreignObject width="60.15277862548828" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Manages</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(733.4236183166504, 28.83333396911621)"><g class="label" transform="translate(-30.07638931274414, -13.333333015441895)"><foreignObject width="60.15277862548828" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Manages</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(733.4236183166504, 120.50000190734863)"><g class="label" transform="translate(-30.07638931274414, -13.333333015441895)"><foreignObject width="60.15277862548828" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="edgeLabel">Manages</span></div></foreignObject></g></g></g><g class="nodes"><g class="node default default" id="flowchart-E-7119" transform="translate(31.40277862548828, 74.66666793823242)"><circle style="" rx="0" ry="0" r="23.402777671813965" width="46.80555534362793" height="41.66666603088379"></circle><g class="label" style="" transform="translate(-15.902777671813965, -13.333333015441895)"><foreignObject width="31.80555534362793" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">User</span></div></foreignObject></g></g><g class="node default default" id="flowchart-A-7121" transform="translate(256.17361068725586, 74.66666793823242)"><rect class="basic label-container" style="" rx="0" ry="0" x="-45.32638931274414" y="-20.833333015441895" width="90.65277862548828" height="41.66666603088379"></rect><g class="label" style="" transform="translate(-37.82638931274414, -13.333333015441895)"><foreignObject width="75.65277862548828" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">SQL Parser</span></div></foreignObject></g></g><g class="node default default" id="flowchart-B-7125" transform="translate(484.5555591583252, 74.66666793823242)"><rect class="basic label-container" style="" rx="0" ry="0" x="-30.56944465637207" y="-20.833333015441895" width="61.13888931274414" height="41.66666603088379"></rect><g class="label" style="" transform="translate(-23.06944465637207, -13.333333015441895)"><foreignObject width="46.13888931274414" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">DBApp</span></div></foreignObject></g></g><g class="node default default" id="flowchart-Table-7129" transform="translate(651.8125057220459, 74.66666793823242)"><rect class="basic label-container" style="" rx="0" ry="0" x="-26.53472328186035" y="-20.833333015441895" width="53.0694465637207" height="41.66666603088379"></rect><g class="label" style="" transform="translate(-19.03472328186035, -13.333333015441895)"><foreignObject width="38.0694465637207" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">Table</span></div></foreignObject></g></g><g class="node default default" id="flowchart-Page-7131" transform="translate(830.6875076293945, 28.83333396911621)"><rect class="basic label-container" style="" rx="0" ry="0" x="-24.17361068725586" y="-20.833333015441895" width="48.34722137451172" height="41.66666603088379"></rect><g class="label" style="" transform="translate(-16.67361068725586, -13.333333015441895)"><foreignObject width="33.34722137451172" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">Page</span></div></foreignObject></g></g><g class="node default default" id="flowchart-GridIndex-7133" transform="translate(830.6875076293945, 120.50000190734863)"><rect class="basic label-container" style="" rx="0" ry="0" x="-42.1875" y="-20.833333015441895" width="84.375" height="41.66666603088379"></rect><g class="label" style="" transform="translate(-34.6875, -13.333333015441895)"><foreignObject width="69.375" height="26.66666603088379"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span class="nodeLabel">GridIndex</span></div></foreignObject></g></g></g></g></g></svg></pre>
+<h2 id="project-contributors">Project Contributors</h2>
+<ul>
+<li><a href="https://github.com/omarkhair">Omar Khair</a></li>
+<li><a href="https://github.com/mohamedeshiba">Mohamed Eshiba</a></li>
+<li><a href="https://github.com/HeshamMoneer">Hesham Moneer</a></li>
+</ul>
+</div>
+</body>
+
+</html>
