@@ -1,4 +1,4 @@
-﻿# Welcome to our Mini Database Engine!
+﻿# Welcome to our Mini Database Engine!!
 
 This project is an application of the **Advanced Database** course where we are concerned with database optimization and file organization on disk. It is a simplified version of a DBMS (Database Management System) where only the following operations are supported:-
 1. Creating table.
